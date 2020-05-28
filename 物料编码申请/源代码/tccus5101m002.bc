@@ -55,7 +55,7 @@ function extern do.all.js()
 	|do.selection(true, do.check,2)
 	|if ischeck=0 then
 	  if (ask.enum("tccus501iejs", tcyesno.yes)=tcyesno.yes) then
-		do.selection(true, do.sh)
+		do.selection(true, do.js)
 		Execute(update.db)
 		refresh.parent(-1) 
 	  endif
