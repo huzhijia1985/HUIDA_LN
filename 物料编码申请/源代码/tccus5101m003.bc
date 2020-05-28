@@ -135,6 +135,7 @@ function extern do.jssqr()
 	tccus501.iehx=""
 	tccus501.cwtx=""	
 	tccus501.stat=ltoe(1)
+	sendtz(tccus501.wlno,tccus501.adus)
 	deletetz(tccus501.wlno,tccus501.cwus)
 	
 }
