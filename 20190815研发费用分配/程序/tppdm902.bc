@@ -1,0 +1,31 @@
+|******************************************************************************
+|* tppdm902  0  VRC 105U 0  prod
+|* 
+|* 634772
+|* 19-10-14 [11:22]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+#pragma used dll otppdmdll900
+table ttppdm902
+function extern long before.open.object.set()
+{
+	return(0)
+}
+
+function extern long before.save.object(long type)
+{
+    if type=DAL_NEW then     
+	  tppdm902.orno=Get.Line.Number("tppdm902","clno",tppdm902.clno)
+	endif
+
+	return(0)
+}
+
+function extern long set.object.defaults()
+{
+  tppdm902.orno=Get.Line.Number("tppdm902","clno",tppdm902.clno)
+  return(0)
+}

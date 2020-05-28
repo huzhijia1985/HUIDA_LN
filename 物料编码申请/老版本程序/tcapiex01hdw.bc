@@ -1,0 +1,371 @@
+|物料代码系统要求在同一个代码系统、同一个业务伙伴下，物料必须不同，且业务伙伴物料代码也必须不同。
+
+|引用程序清单 开始*********************************************************************************************/
+#pragma used dll ottstpapihand
+|#pragma used dll otcapicomtools
+#pragma used dll ottdllbw
+#include <bic_dal>
+#include <bic_dam>
+#include	<bic_text>
+
+          
+
+table ttcibd001
+table ttcibd004
+table ttdisa001
+|引用程序清单 结束
+|为方便子程序调用，如过是物料字段，您可能需要视情况在前边加9个空格
+|开始定义所有字段为全局变量 开始***********************************************************************************/
+extern string err.msg(1000)
+extern long ret
+extern string ret.msg(1000) mb
+extern string e00(100)|导入程序库 +  公用程序参数一
+extern string e01(1)  |标志：I新增U修改D删除
+extern string e02(5)  |总行数
+extern string e03(5)  |当前行
+extern string e04(9)  |主表单据号，如销售订单号等
+extern string eitem(100)  |物料号
+extern domain tcdsca edsca |物料名称
+extern string ekitm(100)  |物料类型(1采购 2自制)
+extern string ecitg(100)  |物料组
+extern string ecuni(100)  |单位
+extern string ewght(100)  |单重
+|extern string ecpcl(100)  |产品型号
+|extern domain tcdscc edscb |规格
+|extern domain tcdscc edscd |颜色
+|extern domain tcdscc edscc |商标
+extern string ecsel(100)   |选择代码
+extern string ecpcl(100)   |产品分类
+extern string ecpln(100)   |产品大类
+extern string ectyp(100)   |产品类型
+|extern domain tcdscb edscd |客户图号
+|extern domain tcseak eseak |搜索关键字I=物料名称简码
+|extern domain tcseak eseab |搜索关键字II=物料编码简码
+extern string ecsig(100)  |物料信号
+extern string euset(100)  |单位集
+extern string ecwun(100)  |重量单位
+extern string eltct(100)  |批次控制
+extern string ecsig(100)  |物料信号
+extern string ecean(100)  |金税编码
+extern string eexin(100)  |U8物料号
+|extern string ecuqs(100)  |销售单位-18/10/17
+|extern string ecwar(100)  |销售仓库-18/10/17
+|extern string ecups(100)  |销售价格单位-18/10/17
+
+|定义所有字段为全局变量 结束
+function  string CheckDoFlag(string XXX(100))
+{
+|用从数据库中查找的方式获取：更新、新增的标志
+|程序默认使用主表第一个字段作为主键来查询对主表的操作标志
+string ret(1)
+select tcibd001.item from tcibd001 where tcibd001.item = :XXX
+selectdo
+  ret = "U"
+selectempty
+  ret = "I"
+endselect
+return ( ret )
+}
+
+function  string CheckDoFlag1(string XXX(100))
+{
+|用从数据库中查找的方式获取：更新、新增的标志  销售子进程
+|程序默认使用主表第一个字段作为主键来查询对主表的操作标志
+string ret(1)
+select tdisa001.item from tdisa001 where tdisa001.item = :XXX
+selectdo
+  ret = "U"
+selectempty
+  ret = "I"
+endselect
+return ( ret )
+}
+
+function extern long GetDT(string dt(19),long flag ) |flag=1日期,否则时间
+{
+long indt
+string y(4)
+string m(2)
+string d(2)
+string hh(2)
+string mi(2)
+string ss(2)
+y  = dt(1 ;4)
+m  = dt(6 ;2)
+d  = dt(9 ;2)
+hh = dt(12;2)
+mi = dt(15;2)
+ss = dt(18;2)
+if flag = 1 then
+  indt = date.to.num(lval(y),lval(m),lval(d)) |到日期
+else
+  indt = date.to.utc(lval(y),lval(m),lval(d),lval(hh),lval(mi),lval(ss))|到时间
+endif
+return ( indt )
+}
+function extern string BOI.Invoke
+|返回值 1:XXXX 成功
+|       0:失败原因 (导入会继续)
+|       -1:失败原因 (导入终止)
+(
+string p00(100),|导入程序库 +  公用程序参数一
+string p01(1),  |标志：I新增U修改D删除
+string p02(5),  |总行数
+string p03(5),  |当前行
+string p04(9),  |主表单据号，如销售订单号等
+string pitem(100),  |物料号
+string pdsca(100) mb,|物料名称
+|string pseab(100),		|物料编号简称
+|string pseak(100) mb,|物料名称简称
+string pkitm(100),  |物料类型(1采购 2自制 3成本)
+string pcitg(100),  |物料组
+string puset(100),  |单位集
+string pcuni(100),  |单位
+string pcwun(100),  |重量单位
+string pwght(100),  |单重
+|string pdscb(100) mb,  |规格
+|string pdscd(100) mb,  |颜色
+|string pdscc(100) mb,  |商标
+string pcsel(100),  |选择代码
+string pcpcl(100),  |产品分类
+string pcpln(100),  |产品大类
+string pctyp(100),  |产品类型
+string pcsig(100),    |物料信号
+|string pexin(100),   |量产时间
+|string pdscd(100),  |客户图号
+string pltct(100),  |批次控制
+string pcean(100) mb,   |金税编码
+string pexin(100) mb    |U8物料号
+|string pcuqs(100),  |销售单位-18/10/17
+|string pcwar(100),  |销售仓库-18/10/17
+|string pcups(100)   |销售价格单位 -18/10/17
+)
+{
+|导入权限检查 开始*********************************************************************************************/
+string userlist(1000)
+userlist="zhizao" |允许导入的用户清单
+if pos(toupper$(userlist),toupper$(logname$)) <= 0 then
+  |mb.import$(ret.msg,"-1:您未被授权导入在程序" & p00 & "中 userlist(已授权导入的用户清单)"   )
+  |return(ret.msg)
+endif
+|导入权限检查 结束
+
+|把传入参数值赋给全局变量 开始*********************************************************************************/
+e00 = p00 |导入程序库
+e01 = p01 |标志：I新增U修改D删除
+e02 = p02 |总行数
+e03 = p03 |当前行
+e04 = p04 |主表单据号，如销售订单号等
+eitem = "         " & trim$(pitem) |物料号  自动加了9个空格
+ret=tt.align.according.domain(eitem,eitem,"tcitem")
+
+
+ekitm = toupper$(pkitm) |物料类型(1采购 2自制 3成本)
+ecitg = toupper$(pcitg) |物料组
+edsca = trim$(pdsca)		|物料名称
+|eseak = trim$(pseak)	|物料名称简称
+|eseab = toupper$(pseab)	|物料编码简称
+euset = toupper$(puset) |单位集
+ecuni = trim$(pcuni) |单位
+ecwun = trim$(pcwun) |重量单位
+ewght = trim$(pwght) |单重
+|edscb = trim$(pdscb) |规格
+|edscd = trim$(pdscd) |颜色
+|edscc = trim$(pdscc) |商标
+|edscd = trim$(pdscd) |客户图号
+ecsig = trim$(pcsig) |物料信号
+eltct = toupper$(pltct) |批次控制
+ecsel = toupper$(pcsel) |选择代码
+ectyp = toupper$(pctyp) |产品类型
+ecpcl = toupper$(pcpcl) |产品分类
+ecpln = toupper$(pcpln) |产品大类
+|ecpcl = toupper$(pcpcl) |产品型号
+ecean = trim$(pcean) |金税编码
+eexin = trim$(pexin) |U8物料号
+|ecuqs = trim$(pcuqs) |销售单位-18/10/17
+|ecwar = trim$(pcwar) |销售仓库-18/10/17
+|ecups = trim$(pcups) |销售价格单位-18/10/17
+
+|eexin = pexin(1;4) & pexin(6;2) & pexin(9;2) |量产时间
+
+|把传入参数值赋给全局变量 结束
+mb.import$(ret.msg,"0:未执行或因主表未成功")
+|参数 e01、p01 传入的是Excel中的 新增 修改 删除标志，但可能对数据来说并不准确，如数据存在是依然给了 新增标志。所以在自动生成了 获取更新标志的程序调用，可选择使用。
+string df(1)
+df = CheckDoFlag( eitem )
+
+|新增程序开始*************************************************************************************************/
+if df = "I"  then
+  ret = dal.new.object("tcibd001")
+  dal.set.field("tcibd001.item", eitem ) |物料号
+  dal.set.field("tcibd001.dsca", edsca ) |物料名称
+  dal.set.field("tcibd001.kitm", ekitm ) |物料类型(1采购 2自制 3成本)
+  |dal.set.field("tcibd001.seak", trim$(eseak) ) |搜索关键字I
+  |dal.set.field("tcibd001.seab", trim$(eseab) ) |搜索关键字II
+  dal.set.field("tcibd001.citg", ecitg ) |物料组
+  dal.set.field("tcibd001.uset", euset ) |单位集
+  dal.set.field("tcibd001.cuni", ecuni ) |单位
+  dal.set.field("tcibd001.cwun", ecwun ) |重量单位
+  dal.set.field("tcibd001.wght", ewght ) |单重
+  |dal.set.field("tcibd001.dscb", edscb ) |规格
+  |dal.set.field("tcibd001.dscd", edscd ) |颜色
+  |dal.set.field("tcibd001.dscc", edscc ) |商标
+  |dal.set.field("tcibd001.dscd", edscd ) |客户图号
+  dal.set.field("tcibd001.ltct", eltct ) |批次控制
+  dal.set.field("tcibd001.csel", ecsel ) |选择代码
+  dal.set.field("tcibd001.ctyp", ectyp ) |产品类型
+  dal.set.field("tcibd001.cpcl", ecpcl ) |产品分类
+  dal.set.field("tcibd001.cpln", ecpln ) |产品大类  
+  dal.set.field("tcibd001.csig",  ecsig ) |物料信号
+  dal.set.field("tcibd001.cean", ecean ) |金税物料号
+  dal.set.field("tcibd001.exin", eexin ) |U8物料号
+
+  ret = dal.save.object("tcibd001")
+  if ret<> 0 then
+    ret=dal.get.error.message(err.msg)
+    ret.msg = "0:" & err.msg
+      abort.transaction()
+  else
+    ret.msg = "1:OK - "  & trim$(tcibd001.item)
+    commit.transaction()
+  endif
+  
+  |if ret.msg(1;1) = "1" then
+  |		df = CheckDoFlag1( eitem )
+  |		if df = "U" then
+  |		  select tdisa001.* from tdisa001 for update
+  |     where tdisa001.item = :eitem
+  |      selectdo
+		  		|ret = dal.change.object("tdisa001")
+			    	|dal.set.field("tdisa001.cuqs", ecuqs ) |销售单位-18/10/17
+			    	|dal.set.field("tdisa001.cwar", ecwar ) |销售仓库-18/10/17
+			    	|dal.set.field("tdisa001.cups", ecups ) |销售价格单位-18/10/17
+			    	|ret = dal.save.object("tdisa001")
+			    	|if ret<> 0 then
+				|	    ret=dal.get.error.message(err.msg)
+				|	    ret.msg = "0:" & err.msg
+				|	      abort.transaction()
+				|		  else
+				|		    ret.msg = "1:"  & trim$(tcibd001.item) & " - Inserted"
+				|		    commit.transaction()
+				|		endif
+				|		selectempty
+            				|		mb.import$(ret.msg,"0:记录不存在，无法修改")
+				|endselect
+  		|endif
+  		|df = ""
+  |endif 
+  
+endif
+|修改程序开始*************************************************************************************************/
+if df = "U" then
+  select tcibd001.* from tcibd001 for update
+  where tcibd001.item = :eitem
+  selectdo
+    ret = dal.change.object("tcibd001")
+    |注意：修改时LN并非允许修改所有字段，如物料类型一般不允许修改，物料组也偶尔不允许修改
+    if len(trim$(edsca)) >0 then
+    	dal.set.field("tcibd001.dsca" , edsca) |物料名称
+    endif 	
+    |if len(trim$(ekitm)) >0 then
+    |	dal.set.field("tcibd001.kitm" , ekitm) |物料类型(1采购 2自制 3成本)
+    |endif
+    |if len(trim$(ecitg)) >0 then	
+    |	dal.set.field("tcibd001.citg" , ecitg) |物料组
+    |endif	
+    |dal.set.field("tcibd001.seak", trim$(eseak) ) |搜索关键字I
+    |dal.set.field("tcibd001.seab", trim$(eseab) ) |搜索关键字II
+    |dal.set.field("tcibd001.cuni" , ecuni) |单位
+    |dal.set.field("tcibd001.uset", euset ) |单位集
+    if len(trim$(ecwun)) >0 then	    
+    	dal.set.field("tcibd001.cwun", ecwun ) |重量单位
+    endif
+    if len(trim$(ewght)) >0 then	
+    	dal.set.field("tcibd001.wght" , ewght) |单重
+    endif	
+    |dal.set.field("tcibd001.dscb" , edscb) |规格
+    |dal.set.field("tcibd001.dscd" , edscd) |颜色
+    |dal.set.field("tcibd001.dscc" , edscc) |商标
+    |dal.set.field("tcibd001.dscd", edscd ) |客户图号
+    |if len(trim$(eltct)) >0 then
+    |	dal.set.field("tcibd001.ltct" , eltct)  |批次控制
+    |endif	
+    if len(trim$(ecsel)) >0 then
+    	dal.set.field("tcibd001.csel" , ecsel)  |选择代码
+    endif
+    if len(trim$(ectyp)) >0 then	
+    	dal.set.field("tcibd001.ctyp" , ectyp)  |产品类型
+    endif	
+    if len(trim$(ecpcl)) >0 then
+    	dal.set.field("tcibd001.cpcl" , ecpcl ) |产品分类
+    endif
+    if len(trim$(ecpln)) >0 then	
+        dal.set.field("tcibd001.cpln" , ecpln ) |产品大类
+   endif
+   if len(trim$(ecsig)) >0 then 
+       dal.set.field("tcibd001.csig", ecsig )  |物料信号
+    endif	
+    if len(trim$(ecean)) >0 then 
+    	dal.set.field("tcibd001.cean", ecean )  |金税物料号
+    endif
+    if len(trim$(eexin)) >0 then 
+    	dal.set.field("tcibd001.exin", eexin )  |U8物料号
+    endif	
+
+    ret = dal.save.object("tcibd001")
+    if ret <> 0 then
+      ret = dal.get.error.message( err.msg )
+      ret.msg = "0:" & err.msg
+      abort.transaction()
+    else
+      ret.msg = "1:Updated-" &  trim$(eitem)
+      commit.transaction()
+      |if ret.msg(1;1) = "1" then
+      |		df = CheckDoFlag1( eitem )
+      |		if df = "U" then
+      |		  select tdisa001.* from tdisa001 for update
+      |  where tdisa001.item = :eitem
+      |  selectdo
+      |		  		  ret = dal.change.object("tdisa001")
+      |			    	dal.set.field("tdisa001.cuqs", ecuqs ) |销售单位
+      |			    	dal.set.field("tdisa001.cwar", ecwar ) |销售仓库
+      |			    	dal.set.field("tdisa001.cups", ecups ) |销售价格单位
+      |			    	ret = dal.save.object("tdisa001")
+      |			    	if ret<> 0 then
+      |					    ret=dal.get.error.message(err.msg)
+      |					    ret.msg = "0:" & err.msg
+      |					      abort.transaction()
+      |						  else
+      |						    ret.msg = "1:"  & trim$(tcibd001.item) & " - Updated"
+      |						    commit.transaction()
+      |						endif
+      |						selectempty
+      |       							mb.import$(ret.msg,"0:记录不存在，无法修改")
+      |						endselect
+      |				endif
+      |    endif
+        endif
+  selectempty
+    mb.import$(ret.msg,"0:记录不存在，无法修改")
+  endselect
+endif
+|删除数据开始*************************************************************************************************/
+if e01 = "D" then
+  select tcibd001.* from tcibd001 for update
+  where tcibd001.item = :eitem
+  selectdo
+    ret = dal.destroy.object("tcibd001")
+    if ret <> 0  then
+      ret  = dal.get.error.message( err.msg )
+      ret.msg = "0:" & err.msg
+      abort.transaction()
+    else
+    ret.msg = "1:Deleted-" &  trim$(eitem)
+      commit.transaction()
+    endif
+  selectempty
+    mb.import$(ret.msg,"1:数据本不存在，不用删了")
+  endselect
+endif
+return( ret.msg )
+}

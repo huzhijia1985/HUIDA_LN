@@ -1,0 +1,96 @@
+|******************************************************************************
+|* ticpr007ue  0  VRC 105U 0  prod
+|* 浗溟浗藱浗膼浗维浘棥浗鳁
+|* 634772
+|* 20-02-24 [16:17]
+|******************************************************************************
+|* Script Type: Library
+|******************************************************************************
+                                                                                
+	table	tticpr007
+
+#include <bic_dal>
+#pragma used dll otccusdll501ws
+table ttccus501
+
+
+function extern long ue.before.before.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:
+		break
+	case DAL_UPDATE:
+		break
+	endcase
+	return(0)
+}
+
+function extern long ue.after.before.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:
+		break
+	case DAL_UPDATE:
+		break
+	endcase
+	return(0)
+}
+
+function extern long ue.before.after.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:
+		break
+	case DAL_UPDATE:
+		break
+	endcase
+	return(0)
+}
+
+function extern long ue.after.after.save.object(long mode)
+{
+	on case mode    
+	case DAL_NEW:
+		break 
+	case DAL_UPDATE:
+    	break
+	endcase
+    |long ltcp
+    long ret
+    |ltcp=date.to.utc(1970,1,1,0,0,0)
+    if ticpr007.ltcp>0 then
+        select * from tccus501 for update where tccus501.item=:ticpr007.item and tccus501.stat=7 and tccus501._compnr=150
+        selectdo
+            tccus501.stat=ltoe(8)
+			tccus501.cwhs=logname$
+			tccus501.hsdt=utc.num()
+		    ret=db.update(ttccus501,db.retry)
+			string title(200) mb
+    		mb.import$(title,str$(get.compnr())&"公司的物料："&trim$(tccus501.item)&"已进行成本计算，请及时更新物料标识")
+			DeleteCustomtz(trim$(tccus501.item),tccus501.cwtx)
+			SendCustomtz(trim$(tccus501.item),title,tccus501.iehx,"http://192.168.1.152:8312/webui/servlet/login")
+        endselect
+    endif
+	return(0)
+}
+
+function extern long ue.before.before.destroy.object()
+{
+	return(0)
+}
+
+function extern long ue.after.before.destroy.object()
+{
+	return(0)
+}
+
+function extern long ue.before.after.destroy.object()
+{
+	return(0)
+}
+
+function extern long ue.after.after.destroy.object()
+{
+	return(0)
+}
+

@@ -1,0 +1,66 @@
+|******************************************************************************
+|* tccus502  0  VRC 105U 0  prod
+|* 浗溟浗藱浗瓿浘楓浗㈧浗
+|* 634772
+|* 19-10-16 [16:27]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+table ttccus502
+
+function extern long before.open.object.set()
+{
+	return(0)
+}
+
+function extern set.object.defaults()
+{    
+    tccus502.pono=get.maxno()
+}
+
+function extern boolean  tccus502.comp.is.valid(long mode)
+{
+  long comp
+  boolean ret
+  string comp_desc(100) mb 
+  string curr(100)
+  long first
+  comp=get.compnr() 
+  if comp<>tccus502.comp then   
+    ret =tt.company(tccus502.comp,comp_desc,curr,first)
+    if ret=false then
+      return(false)
+    endif    
+  endif
+  tccus502.uset=str$(tccus502.comp)
+  |张扬要求100公司单位集为150 2020-5-11
+  if str$(tccus502.comp)="100" then
+    tccus502.uset="150"
+  endif
+  return (true)
+
+}
+
+
+function extern long before.save.object(long type)
+{
+    if type=DAL_NEW then
+      tccus502.pono=get.maxno()
+    endif
+
+	return(0)
+}
+
+function long get.maxno()
+{
+    long maxno
+    select max(pono):maxno from tccus502 where tccus502.wlno=:tccus502.wlno
+    selectdo
+      maxno=maxno+1
+    selectempty
+      maxno=1
+    endselect
+    return (maxno)
+}

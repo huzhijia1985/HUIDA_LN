@@ -1,0 +1,191 @@
+|******************************************************************************
+|* tppdm907  0  VRC 105U 0  dev 
+|* 
+|* 634772
+|* 19-09-02 [09:45]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+#pragma used dll otppdmdll900
+table  ttppdm903
+table  ttppdm904
+table  ttppdm906
+table  ttppdm907 
+table  ttffam800
+
+function extern long before.open.object.set()
+{
+	return(0)
+}
+
+function extern boolean  tppdm907.da01.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da01",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da01))  
+}
+
+function extern boolean  tppdm907.da02.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da02",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da02))
+}
+function extern boolean  tppdm907.da03.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da03",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da03))
+}
+function extern boolean  tppdm907.da04.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da04",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da04))
+}
+function extern boolean  tppdm907.da05.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da05",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da05))
+}
+function extern boolean  tppdm907.da06.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da06",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da06))
+}
+function extern boolean  tppdm907.da07.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da07",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da07))
+}
+function extern boolean  tppdm907.da08.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da08",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da08))
+}
+function extern boolean  tppdm907.da09.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da09",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da09))
+}
+function extern boolean  tppdm907.da10.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da10",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da10))
+}
+function extern boolean  tppdm907.da11.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da11",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da11))
+}
+function extern boolean  tppdm907.da12.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da12",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da12))
+}
+function extern boolean  tppdm907.da13.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da13",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da13))
+}
+function extern boolean  tppdm907.da14.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da14",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da14))
+}
+function extern boolean  tppdm907.da15.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da15",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da15))
+}
+function extern boolean  tppdm907.da16.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da16",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da16))
+}
+function extern boolean  tppdm907.da17.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da17",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da17))
+}
+function extern boolean  tppdm907.da18.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da18",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da18))
+}
+function extern boolean  tppdm907.da19.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da19",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da19))
+}
+function extern boolean  tppdm907.da20.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da20",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da20))
+}
+function extern boolean  tppdm907.da21.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da21",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da21))
+}
+function extern boolean  tppdm907.da22.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da22",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da22))
+}
+function extern boolean  tppdm907.da23.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da23",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da23))
+}
+function extern boolean  tppdm907.da24.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da24",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da24))
+}
+function extern boolean  tppdm907.da25.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da25",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da25))
+}
+function extern boolean  tppdm907.da26.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da26",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da26))
+}
+function extern boolean  tppdm907.da27.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da27",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da27))
+}
+function extern boolean  tppdm907.da28.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da28",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da28))
+}
+function extern boolean  tppdm907.da29.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da29",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da29))
+}
+function extern boolean  tppdm907.da30.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da30",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da30))
+}
+function extern boolean  tppdm907.da31.is.valid(long mode)
+{
+  return(validte_Day("tppdm907","da31",tppdm907.szno,tppdm907.orno,tppdm907.anbr,tppdm907.aext,tppdm907.da31))
+}
+
+function extern long before.save.object(long type)
+{
+    long ret    
+    ret=is.ReadOnly()
+    if ret<>0 then
+      return(ret)
+    endif
+    tppdm907.gshj=tppdm907.da01+tppdm907.da02+tppdm907.da03+tppdm907.da04+tppdm907.da05
+    +tppdm907.da06+tppdm907.da07+tppdm907.da08+tppdm907.da09+tppdm907.da10+tppdm907.da11
+    +tppdm907.da12+tppdm907.da13+tppdm907.da14+tppdm907.da15+tppdm907.da16+tppdm907.da17
+    +tppdm907.da18+tppdm907.da19+tppdm907.da20+tppdm907.da21+tppdm907.da22+tppdm907.da23
+    +tppdm907.da24+tppdm907.da25+tppdm907.da26+tppdm907.da27+tppdm907.da28+tppdm907.da29
+    +tppdm907.da30+tppdm907.da31
+    if tppdm907.gshj<=0 then
+      dal.set.error.message("tppdm904zreo")
+      return(-1)
+    endif
+	return(0)
+}
+
+function extern long before.destroy.object()
+{
+  return (is.ReadOnly())  
+}
+
+function extern long set.object.defaults()
+{
+    tppdm907.orno=Get.Line.Number("tppdm907","szno",tppdm907.szno)
+    return(0)
+}
+
+function long is.ReadOnly()
+{
+  select tppdm906.* from tppdm906 where tppdm906.szno=:tppdm907.szno
+    selectdo
+    if islock(tppdm906.year,tppdm906.mnth)  then
+      dal.set.error.message("tppdm907lock",tppdm906.year,tppdm906.mnth)
+    return(1)
+    endif
+  endselect
+  
+  return(0)
+}

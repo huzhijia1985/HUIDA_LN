@@ -1,0 +1,125 @@
+|******************************************************************************
+|* tcibd901  0  VRC 105U 0  dev 
+|* 浘愯浗φ浗牙浘祵
+|* 634772
+|* 19-05-29 [15:21]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+table ttcibd901
+table ttcibd902
+
+function extern long before.open.object.set()
+{
+	return(0)
+}
+
+function extern long before.save.object(long type)
+{
+	return(0)
+}
+function extern boolean tcibd901.mage.is.mandatory(long mode)
+{
+ 
+    if tcibd901.tcode = "1500" then        
+        return(true)
+    endif 
+ 
+  
+    return(false)
+}
+function extern boolean tcibd901.njlx.is.mandatory()
+{
+   if tcibd901.tcode = "1020" then        
+        return(true)
+   endif   
+   return(false)	
+}
+
+function extern void tcibd901.stat.update()
+{
+  long ret
+  ret=0
+  long comp
+  comp=get.compnr()
+	if etol(tcibd901.stat)=2 then
+		select count(tcibd902.pono):ret from tcibd902 
+		where tcibd902.guid=:tcibd901.guid and tcibd902.comp=:comp
+		selectdo
+		endselect
+		if ret<=0 then
+		  dal.set.error.message("tcibd902comp1")
+		  
+		endif
+	endif
+  
+}
+
+function extern boolean method.is.allowed(long method)
+{
+    if method= DAL_UPDATE or method= DAL_NEW then
+	
+	  if trim$(tcibd901.cpln)<>"" then
+		select tcibd905.cpcl,tcibd905.cpln from tcibd905 where tcibd905.cpcl=:tcibd901.cpcl and tcibd905.cpln=:tcibd901.cpln
+		selectempty
+		  al.set.error.message("tcibd901cpln")
+		  return(false)
+		endselect
+	  endif
+	  
+      if trim$(tcibd901.cpcl)<>"" then
+		select tcibd904.cpcl,tcibd904.csel from tcibd904 where tcibd904.cpcl=:tcibd901.cpcl and tcibd904.csel=:tcibd901.csel
+		selectempty
+		  al.set.error.message("tcibd901cpcl")
+		  return(false)
+		endselect
+	  endif
+    endif
+    return(true)
+}
+
+
+function extern long after.change.object()
+{
+    long ret
+    ret=0
+    long comp
+    comp=get.compnr()
+    
+	if etol(tcibd901.stat)=2 then
+		select count(tcibd902.pono):ret from tcibd902 
+		where tcibd902.guid=:tcibd901.guid and tcibd902.comp=:comp
+		selectdo
+		endselect
+		if ret<=0 then
+		  dal.set.error.message("tcibd902comp1")
+		  return(DALHOOKERROR )
+		endif
+	endif
+    return(0)
+}
+
+function extern long before.destroy.object()
+{
+  long ret
+  if etol(tcibd901.stat)>=2 then
+    dal.set.error.message("tcibd901notdel")
+	return(DALHOOKERROR )
+  endif
+  select * from tcibd902 for update
+  where tcibd902.guid=:tcibd901.guid
+  selectdo
+	ret=dal.destroy.object("tcibd902")
+	if ret<> 0 then
+	  abort.transaction()
+      return(DALHOOKERROR )  
+    endif
+  endselect  
+  
+  return(0)
+	
+}
+
+

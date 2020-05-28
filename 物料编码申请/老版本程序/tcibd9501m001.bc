@@ -1,0 +1,99 @@
+|******************************************************************************
+|* tcibd9501m001  0  VRC 105U 0  dev 
+|* 
+|* baan
+|* 19-04-15 [16:52]
+|******************************************************************************
+|* Script Type: 123
+|******************************************************************************
+                                                                                
+|****************************** DECLARATION SECTION ***************************
+declaration:
+#pragma used dll otcapiex901hdw
+table ttcibd901
+extern domain tcguid main.guid
+extern long state |1新建、2审批、3财务审核、4IE审核、5IE审批
+extern long ret
+long   field.proc
+
+
+|****************************** PROGRAM     SECTION ***************************
+before.program:
+  main.guid=""
+  state=0
+  import ("main.guid", main.guid)
+  import ("state", state)
+  if state=1 then |新建时隐藏退回意见信息
+    group.invisible(6)	
+  else
+    select * from tcibd901 where tcibd901.guid=:main.guid
+	selectdo
+	   
+      if trim$(tcibd901.iejsus) ="" then
+	  	  group.invisible(6)
+	  endif
+	selectempty
+	    group.invisible(6)
+  endselect
+     
+    	
+  endif 
+before.new.object:
+  tcibd901.guid=uuid.generate$()		
+  tcibd901.adus=logname$
+  tcibd901.addt=utc.num()
+before.display.object:	
+  if etol(tcibd901.stat)>=2 and state<>1 then
+	    disable.group(1)
+  endif
+
+  
+|****************************** ZOOM FROM   SECTION ***************************
+|****************************** FORM	     SECTION ***************************
+|form.all:
+|init.form:
+|if state>1 then
+|  select * from tcibd901 where tcibd901.guid=:main.guid
+|	selectdo      
+|	    make.current()
+|  endselect
+|endif
+  
+|****************************** CHOICE      SECTION ***************************
+|****************************** FIELD       SECTION ***************************
+
+field.tcibd901.dsca:
+  before.display:
+    if choice=add.set then
+      tcibd901.guid=uuid.generate$()		
+      tcibd901.adus=logname$
+      tcibd901.addt=utc.num()
+    endif
+	
+field.tcibd901.stat:
+	after.display:
+	if etol(tcibd901.stat)>=2 then	 
+	  disable.commands(add.set)
+	  disable.commands(find.data)
+	  disable.commands(modify.set)
+	  disable.commands(def.find)
+	  disable.commands(display.set)
+	endif
+
+field.tcibd901.cpcl:
+  selection.filter:
+  query.extend.where.in.zoom("tcmcs062.cpcl in ( select tcibd904.cpcl from tcibd904 where tcibd904.csel ="
+  &quoted.string(tcibd901.csel)&")")
+  
+field.tcibd901.cpln:
+  selection.filter:
+  query.extend.where.in.zoom("tcmcs062.cpln in ( select tcibd905.cpln from tcibd905 where tcibd905.cpcl ="
+  &quoted.string(tcibd901.cpcl)&")")
+  
+	
+ 
+|****************************** MAIN TABLE  SECTION ***************************
+
+|****************************** FUNCTION    SECTION ***************************
+
+functions:

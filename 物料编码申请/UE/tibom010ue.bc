@@ -1,0 +1,104 @@
+|******************************************************************************
+|* tibom010ue  0  VRC 105U 0  dev 
+|* BOM浗拈浗刚
+|* baan
+|* 18-11-09 [09:47]
+|******************************************************************************
+|* Script Type: Library
+|******************************************************************************
+                                                                                
+	table	ttibom010
+
+#include <bic_dal>
+#pragma used dll otccusdll501ws
+table ttccus501
+table ttirou101
+
+
+function extern long ue.before.before.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:    
+		tibom010.lmdt = utc.num()
+		break
+	case DAL_UPDATE:
+		tibom010.lmdt = utc.num()
+		break
+	endcase
+   
+	return(0)
+}
+
+function extern long ue.after.before.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:    
+		tibom010.lmdt = utc.num()
+		break
+	case DAL_UPDATE:
+		tibom010.lmdt = utc.num()
+		break
+	endcase
+    
+	return(0)
+}
+
+function extern long ue.before.after.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:    
+		tibom010.lmdt = utc.num()
+		break
+	case DAL_UPDATE:
+		tibom010.lmdt = utc.num()
+		break
+	endcase    
+	return(0)
+}
+
+function extern long ue.after.after.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:    
+		tibom010.lmdt = utc.num()
+		long ret
+		select * from tccus501 for update where tccus501.item=:tibom010.mitm 
+		and tccus501.kitm=2 and tccus501.stat=4 and tccus501._compnr=150
+		selectdo
+		  select * from tirou102 where tirou102.mitm=:tibom010.mitm 
+		  selectdo
+            tccus501.stat=ltoe(7)
+		    ret=db.update(ttccus501,db.retry)
+			string title(200) mb
+    		mb.import$(title,"请及时对物料："&trim$(tccus501.item)&"进行成本核算")
+			SendCustomtz(trim$(tccus501.item),title,tccus501.cwtx,"http://192.168.1.152:8312/webui/servlet/login")
+		  endselect
+		endselect
+		break
+	case DAL_UPDATE:
+		tibom010.lmdt = utc.num()
+		break
+	endcase
+	return(0)
+}
+
+function extern long ue.before.before.destroy.object()
+{
+	return(0)
+}
+
+function extern long ue.after.before.destroy.object()
+{
+	return(0)
+}
+
+function extern long ue.before.after.destroy.object()
+{
+	return(0)
+}
+
+function extern long ue.after.after.destroy.object()
+{
+	return(0)
+}
+

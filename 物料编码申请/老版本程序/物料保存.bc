@@ -1,0 +1,420 @@
+#pragma used dll ottstpapihand
+#pragma used dll ottdllbw
+#include <bic_dal>
+#include <bic_dam>
+#include	<bic_text>
+table ttcibd001
+table ttcibd901
+table ttcibd902
+table ttccus029
+extern string err.msg(1000)
+extern long ret
+extern string ret.msg(1000) mb
+extern long curr.comp
+
+
+extern domain tcitem eitem  |物料号
+|以下为客户化开发的新增物料字段
+extern domain tcmcs.str276m eename |物料英文名称
+extern domain tcqrd1 eboxs   |每箱片（件）数
+extern domain tcqrd1 etaos   |每套箱数
+extern domain tcmcs.str18 ehcode  |海关编码
+extern domain tcmcs.str6 ebcode  |包装方式
+extern domain tcmcs.str6 eycode  |颜色代码
+extern domain tcmcs.str6 edcode |等级
+extern domain tcmcs.str60m ebrand  |商标
+extern domain tcqrd1 edzxs   |定制系数
+extern domain tcmcs.str6 ewcode  |万维品牌
+extern domain tcbgc.seqn emage   |模型寿命
+extern domain tcbgc.seqn egynum  |高压额定次数
+extern domain tcmcs.str18m ebfname |磅房名称
+extern domain tcmcs.str30m epz     |配置
+extern domain tcpric ecjbz  |拆件标准
+extern domain tcmcs.str18m ecs     |层数
+extern domain tcmcs.str6 escode  |受控分类
+extern domain tcwght emaoz   |毛重
+extern domain tcmcs.str50 eupch   |UPC#/条码号
+extern domain tcyesno eynsj   |是否商检
+extern domain tcmcs.str30m erzbs  |认证标识
+extern domain tcmcs.str30m ecaiz   |材质
+extern domain tcmcs.str10m enjlx   |泥浆类型
+extern domain tcmcs.str15m exiaoh  |小号
+extern domain tcmcs.str65m eguig   |规格
+extern domain tcmcs.str10m exilie  |系列
+extern domain tcmcs.str20 ewxtm   |网销条码
+extern domain tcmcs.str3 egxcd   |高新技术代码
+extern domain tccuni eacun   |开票单位			 20181226新增导入信息	
+extern domain tcmcs.str4 exsqd   |销售渠道       --待增
+extern domain tcmcs.str4 ebzj    |保证金         --待增
+
+extern domain tcdsca edsca |物料名称
+extern domain tckitm ekitm |物料类型(1采购 2自制)
+extern domain tccitg ecitg |物料组
+extern domain tccuni ecuni  |单位
+extern domain tcwght ewght  |单重
+extern domain tccsel ecsel   |选择代码 分类1
+extern domain tcmcs.cpcl ecpcl   |产品分类 分类2
+extern domain tcmcs.cpln ecpln   |产品大类 分类3
+extern domain tcctyp ectyp   |产品类型
+|extern domain tcdscb edscd |客户图号
+|extern domain tcseak eseak |搜索关键字I=物料名称简码
+|extern domain tcseak eseab |搜索关键字II=物料编码简码
+extern domain tccsig ecsig  |物料信号
+extern domain tcuset euset  |单位集
+extern domain tccuni ecwun  |重量单位
+extern domain tcyesno eltct  |批次控制
+extern domain tccsig ecsig  |物料信号
+extern domain tccean ecean  |金税编码
+extern domain tccus.exin eexin  |U8物料号
+
+
+
+|判断是否已经存在该物料
+function extern long IsExist(
+string pdsca(100) mb,|物料名称
+string pguig(100) mb,     |规格
+string pycode(100),       |颜色代码
+string pbrand(100) mb     |商标
+)
+{
+  long ret
+  ret=0
+  select count(item):ret from tcibd001 where tcibd001.dsca=:pdsca and tcibd001.guig=:pguig and tcibd001.ycode=:pycode and tcibd001.brand=:pbrand
+  selectdo  	
+  endselect
+  if ret=0 then
+  	select count(item):ret from tcibd901 where tcibd901.dsca=:pdsca and tcibd901.guig=:pguig and tcibd901.ycode=:pycode and tcibd901.brand=:pbrand	
+	selectdo
+  	endselect
+  endif
+  return(ret)
+}
+|将物料申请信息插入物料表
+function extern long Insert(
+domain tcguid guid,
+domain tcitem item
+)
+{
+  long ret
+  ret=0
+  curr.comp=get.compnr()
+  select * from tcibd901 where tcibd901.guid=:guid
+  selectdo
+    select * from tcibd902 where tcibd902.guid=:tcibd901.guid
+	selectdo
+	  ret=switch.to.company(tcibd902.comp) 
+|      compnr.check(tcibd904.comp) 
+	  ret = dal.new.object("tcibd001")
+      dal.set.field("tcibd001.item", item ) |物料号
+      dal.set.field("tcibd001.dsca", tcibd901.dsca ) |物料名称
+      dal.set.field("tcibd001.kitm", tcibd902.kitm ) |物料类型(1采购 2自制 3成本)
+      |dal.set.field("tcibd001.seak", trim$(eseak) ) |搜索关键字I
+      |dal.set.field("tcibd001.seab", trim$(eseab) ) |搜索关键字II
+      dal.set.field("tcibd001.citg", tcibd902.citg ) |物料组              904 
+      dal.set.field("tcibd001.uset", tcibd902.uset  ) |单位集             904
+      dal.set.field("tcibd001.cuni", tcibd901.cuni ) |单位
+      dal.set.field("tcibd001.cwun", tcibd901.cwun ) |重量单位
+      dal.set.field("tcibd001.wght", tcibd901.wght ) |单重
+     
+      dal.set.field("tcibd001.ltct", tcibd901.ltct ) |批次控制
+      dal.set.field("tcibd001.csel", tcibd901.csel ) |选择代码
+      dal.set.field("tcibd001.ctyp", tcibd901.ctyp ) |产品类型
+      dal.set.field("tcibd001.cpcl", tcibd901.cpcl ) |产品分类
+      dal.set.field("tcibd001.cpln", tcibd901.cpln ) |产品大类  
+      dal.set.field("tcibd001.csig", tcibd901.csig ) |物料信号
+      dal.set.field("tcibd001.cean", tcibd902.cean ) |金税物料号 ean代码  904
+      dal.set.field("tcibd001.exin", tcibd901.exin ) |U8物料号 
+      
+      |以下为客户化开发的新增物料字段
+      dal.set.field("tcibd001.ename", tcibd901.ename )   |物料英文名称
+      dal.set.field("tcibd001.boxs", tcibd901.boxs )     |每箱片（件）数
+      dal.set.field("tcibd001.taos", tcibd901.taos )     |每套箱数
+      dal.set.field("tcibd001.hcode", tcibd901.hcode )   |海关编码
+      dal.set.field("tcibd001.bcode", tcibd901.bcode )   |包装方式
+      dal.set.field("tcibd001.ycode", tcibd901.ycode )   |颜色代码
+      dal.set.field("tcibd001.dcode", tcibd901.dcode )   |等级
+      dal.set.field("tcibd001.brand", tcibd901.brand )   |商标
+      dal.set.field("tcibd001.dzxs", tcibd901.dzxs )     |定制系数
+      dal.set.field("tcibd001.wcode", tcibd901.wcode )   |万维品牌
+      dal.set.field("tcibd001.mage", tcibd901.mage )     |模型寿命
+      dal.set.field("tcibd001.gynum", tcibd901.gynum )   |高压额定次数
+      dal.set.field("tcibd001.bfname", tcibd901.bfname ) |磅房名称
+      dal.set.field("tcibd001.pz", tcibd901.pz )         |配置
+      dal.set.field("tcibd001.cjbz", tcibd901.cjbz )     |拆件标准
+      dal.set.field("tcibd001.cs", tcibd901.cs )         |层数
+      dal.set.field("tcibd001.scode", tcibd901.scode )   |受控分类
+      dal.set.field("tcibd001.maoz", tcibd901.maoz )     |毛重
+      dal.set.field("tcibd001.upch", tcibd901.upch )     |UPC#/条码号
+      dal.set.field("tcibd001.ynsj", tcibd901.ynsj )     |是否商检
+      dal.set.field("tcibd001.rzbs", tcibd901.rzbs )     |认证标识
+      dal.set.field("tcibd001.caiz", tcibd901.caiz )     |材质
+      dal.set.field("tcibd001.njlx", tcibd901.njlx )     |泥浆类型
+      dal.set.field("tcibd001.xiaoh",tcibd901.xiaoh )    |小号
+      dal.set.field("tcibd001.guig", tcibd901.guig )     |规格
+      dal.set.field("tcibd001.xilie",tcibd901.xilie )    |系列
+      dal.set.field("tcibd001.wxtm",tcibd901.wxtm )      |网销条码
+      dal.set.field("tcibd001.wxtm",tcibd901.wxtm )      |高新技术代码 
+      dal.set.field("tcibd001.acun",tcibd902.acun )
+|      dal.set.field("tcibd001._compnr",tcibd904.comp )       |所属公司       904
+      
+      ret = dal.save.object("tcibd001")
+	  
+	  if ret<> 0 then
+      ret=dal.get.error.message(err.msg)	  
+      ret.msg = "0:Sales extension " & err.msg
+|      abort.transaction()
+	  ret=0
+      else
+      ret.msg = "1:Sales extension OK - "  & trim$(tcibd001.item)
+	  
+|      commit.transaction()
+	  ret=1
+      endif
+	  ret=switch.to.company(curr.comp)
+|      compnr.check(curr.comp) 
+	selectempty
+	ret=0
+	endselect	
+  selectempty
+    ret=0
+  endselect
+  return(ret)
+
+}
+ 
+ function extern long Insert1(
+domain tcguid guid,
+domain tctcode tcode,
+domain tccsig csig,
+domain tccus.exin exin,
+ref string errmsg() mb
+)
+{
+  curr.comp=get.compnr()
+  eitem=get.maxitem(tcode)
+  if eitem="" then
+	mb.import$(errmsg,"物料编码超限")
+	return(0)
+  endif
+  
+  select * from tcibd901 for update where tcibd901.guid=:guid
+  selectdo
+	if etol(tcibd901.stat)>=4 then
+	  mb.import$(errmsg,"申请已审核不能重复审核")
+      return(0)
+	endif
+    select * from tcibd902 where tcibd902.guid=:tcibd901.guid
+	selectdo
+	
+	ekitm = tcibd902.kitm |物料类型(1采购 2自制 3成本)
+	ecitg = tcibd902.citg |物料组
+	edsca = tcibd901.dsca	|物料名称
+	euset = tcibd902.uset |单位集
+	ecuni = tcibd901.cuni |单位
+	ecwun = tcibd901.cwun |重量单位
+	ewght = tcibd901.wght |单重
+	ecsig = csig |物料信号
+	eltct = tcibd901.ltct |批次控制
+	ecsel = tcibd901.csel |选择代码
+	ectyp = tcibd901.ctyp |产品类型
+	ecpcl = tcibd901.cpcl |产品分类
+	ecpln = tcibd901.cpln |产品大类
+	ecean = tcibd902.cean |金税编码
+	eexin = (trim$(exin)="")?trim$(eitem):trim$(exin) |U8物料号
+	eename = tcibd901.ename          |物料英文名称
+	eboxs = tcibd901.boxs                   |每箱片（件）数
+	etaos = tcibd901.taos                   |每套箱数
+	ehcode = tcibd901.hcode       |海关编码
+	ebcode = tcibd901.bcode       |包装方式
+	eycode = tcibd901.ycode       |颜色代码
+	edcode = tcibd901.dcode       |等级
+	ebrand = tcibd901.brand         |商标
+	edzxs = tcibd901.dzxs                   |定制系数
+	ewcode = tcibd901.wcode                 |万维品牌
+	emage = tcibd901.mage                   |模型寿命
+	egynum = tcibd901.gynum                 |高压额定次数
+	ebfname = tcibd901.bfname        |磅房名称
+	epz = tcibd901.pz               |配置
+	ecjbz = tcibd901.cjbz                   |拆件标准
+	ecs = tcibd901.cs                       |层数
+	escode = tcibd901.scode                 |受控分类
+	emaoz = tcibd901.maoz                   |毛重
+	eupch = tcibd901.upch           |UPC#/条码号
+	eynsj = tcibd901.ynsj                   |是否商检
+	erzbs = tcibd901.rzbs            |认证标识
+	ecaiz = tcibd901.caiz            |材质
+	enjlx = tcibd901.njlx                   |泥浆类型
+	exiaoh = tcibd901.xiaoh          |小号
+	eguig = tcibd901.guig            |规格
+	exilie = tcibd901.xilie          |系列
+	ewxtm = tcibd901.wxtm  |网销条码
+	egxcd = tcibd901.gxcode  |高新技术代码
+	eacun = tcibd901.acun  |开票单位           20181226
+	exsqd = tcibd901.xsqd  |销售渠道           20181226
+	ebzj = tcibd901.bzj    |保证金             20181226
+	
+	ret=switch.to.company(tcibd902.comp) 
+	ret = dal.new.object("tcibd001")
+    dal.set.field("tcibd001.item", eitem ) |物料号
+    dal.set.field("tcibd001.dsca", edsca ) |物料名称
+    dal.set.field("tcibd001.kitm", ekitm ) |物料类型(1采购 2自制 3成本)
+    |dal.set.field("tcibd001.seak", trim$(eseak) ) |搜索关键字I
+    |dal.set.field("tcibd001.seab", trim$(eseab) ) |搜索关键字II
+    dal.set.field("tcibd001.citg", ecitg ) |物料组
+    dal.set.field("tcibd001.uset", euset ) |单位集
+    dal.set.field("tcibd001.cuni", ecuni ) |单位
+    dal.set.field("tcibd001.cwun", ecwun ) |重量单位
+    dal.set.field("tcibd001.wght", ewght ) |单重
+    
+    dal.set.field("tcibd001.ltct", eltct ) |批次控制
+    dal.set.field("tcibd001.csel", ecsel ) |选择代码
+    dal.set.field("tcibd001.ctyp", ectyp ) |产品类型
+    dal.set.field("tcibd001.cpcl", ecpcl ) |产品分类
+    dal.set.field("tcibd001.cpln", ecpln ) |产品大类  
+    dal.set.field("tcibd001.csig",  ecsig ) |物料信号
+    dal.set.field("tcibd001.cean", ecean ) |金税物料号
+    dal.set.field("tcibd001.exin", eexin ) |U8物料号
+    dal.set.field("tcibd001.ename", eename )   |物料英文名称
+    dal.set.field("tcibd001.boxs", eboxs )     |每箱片（件）数
+    dal.set.field("tcibd001.taos", etaos )     |每套箱数
+    dal.set.field("tcibd001.hcode", ehcode )   |海关编码
+    dal.set.field("tcibd001.bcode", ebcode )   |包装方式
+    dal.set.field("tcibd001.ycode", eycode )   |颜色代码
+    dal.set.field("tcibd001.dcode", edcode )   |等级
+    dal.set.field("tcibd001.brand", ebrand )   |商标
+    dal.set.field("tcibd001.dzxs", edzxs )     |定制系数
+    dal.set.field("tcibd001.wcode", ewcode )   |万维品牌
+    dal.set.field("tcibd001.mage", emage )     |模型寿命
+    dal.set.field("tcibd001.gynum", egynum )   |高压额定次数
+    dal.set.field("tcibd001.bfname", ebfname ) |磅房名称
+    dal.set.field("tcibd001.pz", epz )         |配置
+    dal.set.field("tcibd001.cjbz", ecjbz )     |拆件标准
+    dal.set.field("tcibd001.cs", ecs )         |层数
+    dal.set.field("tcibd001.scode", escode )   |受控分类
+    dal.set.field("tcibd001.maoz", emaoz )     |毛重
+    dal.set.field("tcibd001.upch", eupch )     |UPC#/条码号
+    dal.set.field("tcibd001.ynsj", eynsj )     |是否商检
+    dal.set.field("tcibd001.rzbs", erzbs )     |认证标识
+    dal.set.field("tcibd001.caiz", ecaiz )     |材质
+    dal.set.field("tcibd001.njlx", enjlx )     |泥浆类型
+    dal.set.field("tcibd001.xiaoh",exiaoh )    |小号
+    dal.set.field("tcibd001.guig", eguig )     |规格
+    dal.set.field("tcibd001.xilie",exilie )    |系列
+    dal.set.field("tcibd001.wxtm",ewxtm )      |网销条码
+    dal.set.field("tcibd001.wxtm",egxcd )      |高新技术代码 
+    dal.set.field("tcibd001.acun",eacun )      |开票单位       20181226
+	ret = dal.save.object("tcibd001")
+	  
+	if ret<> 0 then
+      ret=dal.get.error.message(err.msg)	
+      
+      errmsg = err.msg
+	  if ret=606 then
+		mb.import$(errmsg,err.msg&"请检查相应的物料信息是否在对应的公司存在！")
+	  endif
+      abort.transaction()	  
+	  ret=switch.to.company(curr.comp)
+	  ret=0
+	  return(ret) 
+    else
+		|物料信息增加完成后增加物料扩展字段
+	  if trim$(ebzj)<>"" or trim$(exsqd)<>"" then	  
+	    select * from tccus029 where tccus029.item=:eitem
+	    selectdo
+|		  tccus029.xsqd=exsqd
+|		  tccus029.bzj=ebzj
+|		  ret=db.update(tccus029,db.retry)
+|	    selectempty
+		  dal.new.object("tccus029")
+          dal.set.field("tccus029.item", eitem ) |物料号
+          dal.set.field("tccus029.xsqd", exsqd ) |销售渠道
+          dal.set.field("tccus029.bzj",ebzj )    |保证金 
+          ret = dal.save.object("tccus029")
+	    endselect
+	    
+	    if ret<> 0 then 
+          ret=dal.get.error.message(err.msg)	  
+          errmsg = err.msg
+          abort.transaction()	    
+	      ret=switch.to.company(curr.comp)
+		  ret=0
+	      return(ret) 
+|        else
+|	      ret=1
+        endif
+	  endif
+	  mb.import$(errmsg,"物料编码申请成功"& trim$(tcibd001.item))
+|      errmsg = "1:Sales extension OK - "  & trim$(tcibd001.item)
+	  ret=1
+    endif
+	  ret=switch.to.company(curr.comp)
+	selectempty
+	mb.import$(errmsg,"没有公司信息")
+	ret=0
+	endselect	
+	|这里更新主表
+	 if ret=1 then |插入成功后，更新申请主表
+	    tcibd901.item=eitem
+		tcibd901.csig=csig
+		tcibd901.exin=eexin
+		tcibd901.ieshus=logname$
+		tcibd901.ieshdt=utc.num()
+		tcibd901.stat=ltoe(4)
+		ret=db.update(ttcibd901,db.retry)
+		if ret<> 0 then
+		  ret=dal.get.error.message(err.msg)	  
+          errmsg = err.msg
+          abort.transaction()
+	      ret=0	 
+	      return(ret) 
+		else
+		  commit.transaction()
+		  ret=1
+		endif
+	 endif
+	 
+  selectempty
+    ret=0
+  endselect
+  return(ret)
+
+}
+
+function domain tcitem get.maxitem( string tcode(4))
+{
+  domain tcitem max.item
+  long maxitem
+  select max(tcibd001.item):max.item from tcibd001 where tcibd001.item like "         "&:tcibd901.tcode&".*"
+  selectdo    	
+ 	maxitem=lval(str.substring$(trim$(max.item),4,11))
+ 	maxitem=maxitem+1
+  
+ 	if len(str$(maxitem))>6 then
+ 	  max.item=""
+ 	else
+	  max.item=str$(maxitem)
+	  Lpad(max.item,"0",6)
+ 	  max.item="         "&tcibd901.tcode&max.item
+ 	endif
+  selectempty
+     max.item="         "&tcode&"000001"
+  endselect
+  
+  RETURN(max.item)
+}
+
+function void  Lpad(ref string code(),string char(1),long lens)
+{
+  long n
+  n=lens-len(code)
+	
+  while n>0
+	code=char&code
+	n=n-1
+  endwhile
+	
+|	return(code)
+}
+
+
+ 

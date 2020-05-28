@@ -1,0 +1,27 @@
+|******************************************************************************
+|* ticus200  0  VRC 105U 0  prod
+|* 浘浘牋浘炴浘浘勶浗┝浗鐕
+|* 634772
+|* 19-11-11 [16:18]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+table tticus200
+
+function extern long before.open.object.set()
+{
+	return(0)
+}
+
+
+
+function extern long before.save.object(long type)
+{
+     ticus200.sczs=ticus200.lps+ticus200.blps
+      if ticus200.sczs <>0 then
+       ticus200.lpv=(val(str$(ticus200.lps))*100)/(val(str$(ticus200.sczs)))
+     endif
+	return(0)
+}

@@ -1,0 +1,68 @@
+|******************************************************************************
+|* tccus5101m003  0  VRC 105U 0  prod
+|* 浗溟浗藱浗浗饋浗瓿浘楓
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-10-15
+|******************************************************************************
+|* Main table tccus501 浗溟浗藱浗瓿浘楓, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+#pragma used dll otccusdll501ws
+  table   ttccus501 | 浗溟浗藱浗瓿浘楓
+  table   ttccus502
+  long ischeck
+
+|****************************** program section ********************************
+before.program:
+  query.extend.where(" (tccus501.stat=2 and tccus501.xsqd='') or tccus501.stat=6 ") 
+before.display.object: 
+  disable.group(3) 
+  disable.group(4)
+  disable.group(5) 
+  disable.group(6)
+  disable.group(7)
+|****************************** group section **********************************
+
+functions:
+function extern do.all.sh()
+{
+  ischeck=0
+	do.selection(true, do.check)
+	if ischeck=0 then
+	  do.selection(true, do.sh)
+	  Execute(update.db)
+	  refresh.parent(-1) 
+	else	  
+	  mess("tccus501notsh",1)
+	endif
+	
+}
+
+function extern do.sh()
+{  
+	tccus501.cwsh=logname$
+	tccus501.cwdt=utc.num()
+	tccus501.stat=ltoe(3) 
+	sendtz(tccus501.wlno,tccus501.ieus)
+	deletetz(tccus501.wlno,tccus501.cwus)
+}
+function do.check()
+{
+	long nums
+	nums=0
+	select count(tccus502.pono):nums from tccus502 where tccus502.wlno=:tccus501.wlno and ( tccus502.kitm is null or tccus502.citg =""
+	or tccus502.uset ="" or tccus502.cean =""  or tccus502.acun ="")
+	selectdo
+    endselect
+	if nums>0 then
+	 ischeck=ischeck+1
+	 return
+	endif
+	if  etol(tccus501.stat)=2 or etol(tccus501.stat)=6 then
+		ischeck=ischeck+0
+	else 
+		ischeck=ischeck+1
+	endif 
+}

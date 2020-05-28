@@ -1,0 +1,199 @@
+|******************************************************************************
+|* tcibd9501m002  0  VRC 105U 0  dev 
+|* 浗溟浗藱浗浗饋浗瓿浘楓
+|* Installation user         
+|* 2019-04-17
+|******************************************************************************
+|* Main table tcibd901 , Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+#pragma used dll otcapiex901hdw
+  extern table   ttcibd901
+  extern string log.name
+  extern domain tcguid main.guid
+  extern long state |1新建、2审批、3财务审核、4IE审核、5IE审批
+  extern long ischeck
+  string errmsg(100) mb
+  long ret
+  long comp 
+
+|****************************** program section ********************************
+before.program:    
+	comp=get.compnr()
+
+|field.tcibd901.iejsus:
+|	before.display:
+|	if trim$(tcibd901.iejsus)="" then
+|		group.invisible(6)
+|	endif
+	
+field.tcibd901.dsca:
+	before.display:
+		if choice=add.set then
+			tcibd901.guid=uuid.generate$()		
+			tcibd901.adus=logname$
+			tcibd901.addt=utc.num()
+		endif
+
+field.tcibd901.cwun:
+	selection.filter:
+		query.extend.where.in.zoom("tcmcs001.tccu=1" )
+
+choice.mark.occur:      
+	after.choice:		
+		main.guid=tcibd901.guid
+		export ("main.guid", main.guid)
+		
+		if etol(tcibd901.stat)<>3 then 
+		  disable.commands("tcibd9501m004")
+		  disable.commands("tcibd9501m005")
+		else 
+		  enable.commands("tcibd9501m004")
+		  enable.commands("tcibd9501m005")
+		endif
+		if etol(tcibd901.stat)=1 then 
+		  enable.commands("do.all.sh")
+		else 		  
+		  disable.commands("do.all.sh")
+		endif
+		if etol(tcibd901.stat)=2 then 
+		  enable.commands("cwsp")
+		  enable.commands("do.cw.sh")
+		else 		  
+		  disable.commands("cwsp")
+		  disable.commands("do.cw.sh")
+		endif
+		
+		
+
+choice.add.set:
+  after.choice:
+    state=1
+    export ("state", state)	
+|****************************** main talbe **************************************
+main.table.io:	
+	before.rewrite:
+	before.write:
+	ret=IsExist(tcibd901.dsca,tcibd901.guid,tcibd901.ycode,tcibd901.brand)
+	if ret=1 then
+	  skip.io("tcibd901repeat")
+	endif
+
+	after.read:
+	if etol(tcibd901.stat)<>2 then 
+		disable.commands("tcibd9501m003")
+	  else
+	    main.guid=tcibd901.guid
+	    export ("main.guid", main.guid)
+	endif
+	if etol(tcibd901.stat)<>1 then
+	  disable.group(1)
+|	  disable.commands("do.all.sh")
+	endif
+	
+	
+		
+|****************************** group section *********************************
+
+
+functions:
+function extern do.all.sh()
+{
+    ischeck=0	
+	do.selection(true, do.check,1)
+	if ischeck=0 then
+	  do.selection(true, do.sh)
+	  Execute(update.db)
+	else|	  
+	  mess("tcibd901ysh",1)
+	endif
+	
+}
+
+function extern do.sh()
+{
+  long count902
+  select count(tcibd902.guid):count902 from tcibd902 
+  where tcibd902.guid=:tcibd901.guid and tcibd902.comp=:comp
+  selectdo
+  endselect
+  if count902>0 then
+	tcibd901.shus=logname$
+	tcibd901.shdt=utc.num()
+	tcibd901.stat=ltoe(2)
+  else 
+    mess("tcibd904comp1",1)  
+  endif
+}
+
+function do.check(long stat)
+{
+	if  etol(tcibd901.stat)=stat then
+		ischeck=ischeck+0
+	else 
+		ischeck=ischeck+1
+	endif 
+}
+function extern do.cwsh()
+{
+	tcibd901.cwshus=logname$
+	tcibd901.cwshdt=utc.num()
+	tcibd901.stat=ltoe(3)
+	
+}
+
+function do.cwcheck()
+{
+	long num,comp
+	num=0
+	comp=get.compnr()
+	select count(guid):num from tcibd902 where tcibd902.guid=:tcibd901.guid and tcibd902.comp=:comp
+	selectdo
+	endselect
+	if num>0 then
+	  ischeck=ischeck+0
+	else 
+	  ischeck=ischeck+1
+	endif 
+}
+
+function extern do.cw.sh()
+{
+	ischeck=0	
+	do.selection(true, do.check,2)
+	if ischeck=0 then
+	  ischeck=0
+	  do.selection(true, do.cwcheck)
+	  if ischeck=0 then
+	    do.selection(true, do.cwsh)
+	    Execute(update.db)
+	  else	 
+	  mess("tcibd904comp1",1)
+	endif
+	else	 
+	  mess("tcibd901ysh",1)
+	endif
+}
+
+function extern cwsh()
+{
+  
+  state=2
+  export ("state", state)
+  string	return_str(10)
+  return_str=start.session(MODAL ,"tcibd9501m001","","tcibd9501m001._index1")
+   |zoom.to$ ("tcibd9501m001", Z.SESSION,"","tcibd9501m001._index1",0)
+}
+
+function extern cwsp()
+{
+  state=3
+  export ("state", state)
+  string	return_str(10)
+  return_str=start.session(MODAL ,"tcibd9501m001","","tcibd9501m001._index1")
+   
+}
+
+

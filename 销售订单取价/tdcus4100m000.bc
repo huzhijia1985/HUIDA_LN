@@ -1,0 +1,146 @@
+|******************************************************************************
+|* tdcus4100m000  0  VRC 105U 0  prod
+|* 浘愯浗炗浗е浗濛
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-11-21
+|******************************************************************************
+|* Main table tdcus400 浘獉浗浗е浘磅浗顗浗藝浗维浗湱浘浘愯, Form Type 4
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+
+  table   ttdcus400 | 浘獉浗浗е浘磅浗顗浗藝浗维浗湱浘浘愯
+  table ttdsls400
+  table ttdsls401
+  table ttdpcg030 |价格矩阵
+  table ttdpcg031 | 价格表行
+  table ttccom110
+  table ttdpcg010 |矩阵定义
+
+   extern  domain  tcmcs.str1       clan.f    fixed
+   extern  domain  tcmcs.str1       clan.t    fixed
+   extern  domain  tcyesno  ctxt.txt
+   extern  domain  tcpono           seq.f
+   extern  domain  tcpono           seq.t
+   extern domain tcorno orno
+
+
+
+  domain tccwoc cwoc |销售部门 
+  domain tccotp sotp |订单类型
+  domain tcmcs.cbtp cbtp |订单类型
+  domain tcdate odat
+  domain tcdate mdat
+  domain tdpcg.prbk prbk |价目表
+  string items(200)
+  double jgxs
+  string err.msg(20) mb
+|产品类型 prty soty 销售订单类型 tccom110.cbtp 业务伙伴类型 tccom110.ofbp 业务伙伴编码 tccom100.bpid
+
+|****************************** program section ********************************
+
+before.program:
+  import("tdsls400.orno",orno)
+  cwoc=""
+  long ret
+  string none(20) mb
+  mb.import$(none,"没有找到对应的价格矩阵")
+  select trim(tdsls400.cofc):cwoc,tdsls400.sotp:sotp,tccom110.cbtp:cbtp,tdsls400.odat:odat from tdsls400,tccom110  
+  where tdsls400.ofbp REFERS to tccom110 and tdsls400.orno=:orno as set with 1 rows
+  selectdo 
+  endselect                       
+
+    | select * from tdpcg010 where tdpcg010.maty=1 and tdpcg010.maat=60 
+
+  on case cwoc
+  case "200300":|soty 订单类型
+    |矩阵类型   tdpcg010.maty=1 为销售类型  矩阵属性 tdpcg010.maat=60 订单类型 矩阵定义 tdpcg010.made
+                                         |订单类型 tdpcg030.soty  价目表 tdpcg030.prbk   按业务伙伴类型101000002
+    select tdpcg030.prbk:prbk,tdpcg030.prfc:jgxs from tdpcg030,tdpcg010 where tdpcg030.made REFERS to tdpcg010.made 
+    and tdpcg010.maty=1 
+    and tdpcg010.maat(1)=60
+    and tdpcg030.soty=:sotp 
+    and tdpcg030.efdt<:odat 
+    and (tdpcg030.exdt=:mdat or tdpcg030.exdt>:odat)    
+    selectdo
+    selectempty
+     message(none)|找不到对应的价格矩阵 退出
+     end()
+    endselect
+    items=""
+    
+    select * from tdsls401 where tdsls401.orno=:orno and not  (tdsls401.item in (select item from tdpcg031 where tdpcg031.prbk=:prbk and tdpcg031.tapr<>0)) 
+    selectdo
+      items=items&","&trim$(tdsls401.item)
+    selectempty
+    endselect
+    if len(items)>0 then|存在价目表中没有的物料时  弹出错误并退出
+      | items=str.substring$(items,1)
+      mess("tdcus4100err",1,items)
+      end()
+    endif
+    |更新销售订单明细  tdsls401.vatp 含税单价 tpdcg031.tapr
+
+    select tdsls401.*,tdpcg031.tapr from tdsls401 for update ,tdpcg031 
+    where tdsls401.item REFERS to tdpcg031.item and tdsls401.orno=:orno and tdsls401.qidl=0 and tdpcg031.prbk=:prbk
+    and tdpcg031.efdt<:odat  and (tdpcg031.exdt=:mdat or tdpcg031.exdt>:odat) 
+    selectdo
+      tdsls401.vatp=tdpcg031.tapr*jgxs
+      ret=db.update(ttdsls401,db.retry)
+    endselect
+    commit.transaction()
+    refresh.parent(-1) 
+    end()
+    break
+  case "200105":   
+  case "200124":
+    |按业务伙伴类型  40 买方类型 stty
+    select tdpcg030.prbk:prbk,tdpcg030.prfc:jgxs from tdpcg030,tdpcg010 where tdpcg030.made REFERS to tdpcg010.made 
+    and tdpcg010.maty=1 
+    and tdpcg010.maat(1)=40
+    and tdpcg030.stty=:cbtp 
+    and tdpcg030.efdt<:odat 
+    and (tdpcg030.exdt=:mdat or tdpcg030.exdt>:odat)    
+    selectdo
+    selectempty
+     message(none)|找不到对应的价格矩阵 退出
+     end()
+    endselect
+
+    select * from tdsls401 where tdsls401.orno=:orno and not  (tdsls401.item in (select item from tdpcg031 where tdpcg031.prbk=:prbk  and tdpcg031.tapr<>0))
+    selectdo
+      items=items&","&trim$(tdsls401.item)
+    selectempty
+    endselect
+    if len(items)>0 then|存在价目表中没有的物料时  弹出错误并退出
+      | items=str.substring$(items,1)
+      mess("tdcus4100err",1,items)
+      end()
+    endif
+    |更新销售订单明细  tdsls401.vatp 含税单价 tpdcg031.tapr
+    select tdsls401.*,tdpcg031.tapr from tdsls401 for update,tdpcg031  
+    where tdsls401.item REFERS to tdpcg031.item and  tdsls401.orno=:orno and tdsls401.qidl=0 and tdpcg031.prbk=:prbk
+    and tdpcg031.efdt<:odat  and (tdpcg031.exdt=:mdat or tdpcg031.exdt>:odat) 
+    selectdo
+      tdsls401.vatp=tdpcg031.tapr*jgxs
+      ret=db.update(ttdsls401,db.retry)
+    endselect
+    commit.transaction()
+    refresh.parent(-1) 
+    end()
+
+    break
+  default:
+    mb.import$(err.msg,"销售部门不符合条件！")
+    message(err.msg)
+    break
+  endcase
+  end()
+  
+|****************************** group section **********************************
+
+group.1:
+init.group:
+   get.screen.defaults()
+

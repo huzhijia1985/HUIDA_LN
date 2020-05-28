@@ -1,0 +1,441 @@
+|******************************************************************************
+|* tdcus2500m070  0  VRC 105U 0  dev 
+|* 正式预测订单（LN->万维）
+|* Installation user                                                                                                                                                                                                                                                                                                                                                                                               
+|* 2018-10-31
+|******************************************************************************
+|* Form Type 4
+|******************************************************************************
+|2018/12/3 更新传输日期lxdt在程序中位置                                                                                
+|****************************** declaration section ***************************
+declaration:
+#include <bic_soap>
+#include <bic_curl>
+#include <bic_desktop>
+
+
+table ttdsls400
+table ttdsls401
+table ttcmcs050
+table ttccom100
+table ttcibd001
+table tcisli810
+table ttdcus250
+table ttdcus300
+table ttdcus318
+
+extern domain tcmcs.str13 orno.f,orno.t 
+extern domain tccom.bpid otbp.f,otbp.t 
+extern domain tcyesno v.redo
+extern domain tcyesno v.relog
+
+domain tcmcs.str13  sess |进程号
+domain tcmcs.str100 urls |URL
+domain tcmcs.str20  usid |用户
+domain tcmcs.str20  pswd |密码
+domain tcmcs.str30  spna |spName
+domain tcmcs.str30  coln |colName
+string logname(100)
+domain tcncmp comp
+|****************************** program section ********************************
+before.program:
+sess = prog.name$
+read.para()
+comp = get.compnr()
+logname = "log." & str$(comp) & "." & trim$(sess) & ".txt"
+
+|****************************** group section **********************************
+
+group.1:
+init.group:
+   get.screen.defaults()
+
+|****************************** choice section ********************************
+
+
+
+|****************************** field section *********************************
+field.orno.f:
+when.field.changes:
+orno.t = orno.f
+
+field.otbp.f:
+when.field.changes:
+otbp.t = otbp.f
+|****************************** function section ******************************
+
+functions:
+function read.para()
+{
+	select tdcus250.*
+	from tdcus250
+	where tdcus250.sess = :sess
+	selectdo
+		urls = tdcus250.urls
+		usid = tdcus250.usid
+		pswd = tdcus250.pswd
+		spna = tdcus250.spna
+		coln = tdcus250.coln
+	selectempty
+		urls = ""
+		usid = ""
+		pswd = ""
+		spna = ""
+		coln = ""		
+	endselect
+}
+
+function extern show.logs()
+{
+	|client.download.file("D:/Infor/LN/bse/log/log.tdcus2500m010")
+|	client.show.file("D:/Infor/LN/bse/log/log.tdcus2500m010",true,"Interface Log")
+|long fp
+long exitCode
+
+|string line_str(100) mb
+|mb.import$(line_str,"测试中文输入，ABCD1234.")
+|fp = seq.open("D:/Infor/LN/bse/log/log.tdcus2500m010.txt", "wt" )
+|seq.puts(to.utf8(to.utf8(line_str),fp)
+|seq.close(fp)
+
+	
+if tc.is.html.ui() = true then
+	client.download.file("D:/Infor/LN/bse/log/" & trim$(logname))
+else	
+|	create.progress.indicator("cprrp920_template.xls transfering from server to client", PROGRESS.BAR + PROGRESS.STOP)
+	server2client("${BSE}\log\"  & trim$(logname), "${BSE_TMP}\"  & trim$(logname),false,false,false)
+	string finish.mess(80) mb
+|	mb.import$(finish.mess, "下载完成")		
+|	message(strip$(finish.mess))
+	start.application.local("${BSE_TMP}\"  & trim$(logname) ,false,exitCode) 	
+endif	
+
+}
+
+function string to.utf8(string tss.str(4000) mb)
+{
+    string utf8str(4000*4)
+    utf8.export(utf8str, tss.str, UTF8_STD_MODE)
+    return(utf8str)
+}
+
+function extern btnClick()
+{
+	long msgNode
+	long headerNode
+	long requestNode
+	long responseNode
+	long methodNode,methodNode1,methodNode2,methodNode3
+	long dtNode,paramInfoNode,paramNode
+	long schemaNode
+	long elementNode,elementNode2,elementNode3,elementNode4
+	long complexTypeNode
+	long choiceNode
+	long colNode1,colNode2,colNode3,colNode4,colNode5
+	long colNode6,colNode7,colNode8,colNode9,colNode10,colNode11
+  long colNode12,colNode13,colNode14,colNode15,colNode16,colNode17
+  long colNode18,colNode19,colNode20 
+	long complexTypeNode2
+	long sequenceNode
+	long diffgrNode
+  long documentNode
+	long tableNode
+	
+	long status
+	long ns,namespace
+	string zip( 64 )
+	string result( 128 )
+  long retval
+	zip = "13454134541"
+	long spdaDAONode |XML
+  long cnt,cnt1,cnt2
+  string ret.msg(200)
+  double tiji
+  string cpmc(200)
+  long fd
+  domain tcitem m.witm,s.witm
+  domain tcseri seri
+  domain tcqnty qnty
+  string trdt(25)
+  string djdt(19)
+  string xfdt(19)
+  string logdate(25)
+  string logstart(100)
+  domain tcdate trdt.0
+  domain tcmcs.st22 uuid
+  uuid = uuid.generate$()
+   
+cnt = 0
+cnt1 = 0
+cnt2 = 0
+
+|
+select count(tdsls401.pono) :cnt
+from tdsls400,tdsls401
+where tdsls400.orno = tdsls401.orno |and tdsls400.sotp = "SN1" 
+and tdsls400.orno(1;3) in ("S11","S12","S13","S14","S15","S20","S1A","S1B")
+and tdsls400.hdst = 20|处理中
+and tdsls401.clyn = 2
+and tdsls400.orno >= :orno.f and tdsls400.orno <= :orno.t
+|and tdsls400.otbp >= :otbp.f and tdsls400.otbp <= :otbp.t
+and (tdsls400.lxdt <= tdsls400.lmdt and :v.redo = tcyesno.no or :v.redo = tcyesno.yes) |传输日期早于数据更新日期
+selectdo
+selectempty
+cnt = 0
+endselect
+
+if cnt > 0 then
+|-----------------------------------------------
+
+|------------------------------------------------  
+	| Create a new SOAP message
+	msgNode = soap.newMessage( URI_SOAP12 )
+
+|--------------------------------------
+headerNode = xmlNewNode( "MySoapHeader" )
+namespace = xmlNewNamespace( headerNode, "tem", "http://tempuri.org/" )
+xmlSetNamespace( headerNode, namespace )
+
+
+xmlNewDataElementNs( namespace, "errinfo", "", headerNode )
+xmlNewDataElementNs( namespace, "UserID", "huida_anywell", headerNode )
+xmlNewDataElementNs( namespace, "Password", "huidaForLN2018", headerNode )
+|----------------------------------------
+	| Define the method to call
+	requestNode = xmlNewNode( "ExecuteProcDataSet_Table" )
+|	spNameNode = xmlNewNode("spName",XML_ELEMENT,requestNode)
+|  paramInfoNode = xmlNewNode("paramInfo",XML_ELEMENT,requestNode)
+|  colNameNode = xmlNewNode("colName",XML_ELEMENT,requestNode)
+  dtNode = xmlNewNode("dt",XML_ELEMENT,requestNode)
+  
+	| Declare and set the namespace
+	ns = xmlNewNamespace( requestNode, "tem", "http://tempuri.org/" )
+|	xmlSetNamespace( spNameNode, ns )
+|	xmlSetNamespace( paramInfoNode, ns )
+|	xmlSetNamespace( colNameNode, ns )
+  xmlSetNamespace( requestNode, ns )
+	xmlSetNamespace( dtNode, ns )
+
+|此处按接口情况修改	
+	xmlNewDataElementNs( ns, "spName", trim$(spna), requestNode )
+	xmlNewDataElementNs( ns, "paramInfo", "", requestNode )
+	xmlNewDataElementNs( ns, "colName", trim$(coln), requestNode )		
+|--------------------------------------------
+|表头信息
+
+
+
+|dt数据集定义 
+ schemaNode = xmlNewNode("xs:schema",XML_ELEMENT,dtNode) 
+ retVal = xmlsetAttribute(schemaNode,  "id",  "NewDataSet")
+ retVal = xmlsetAttribute(schemaNode,  "xmlns:msdata",  "urn:schemas-microsoft-com:xml-msdata") 
+ retVal = xmlsetAttribute(schemaNode,  "xmlns:xs",  "http://www.w3.org/2001/XMLSchema")
+
+ elementNode = xmlNewNode("xs:element",XML_ELEMENT,schemaNode) 
+ retVal = xmlsetAttribute(elementNode,  "msdata:UseCurrentLocale",  "true")
+ retVal = xmlsetAttribute(elementNode,  "msdata:MainDataTable",  "table") 
+ retVal = xmlsetAttribute(elementNode,  "msdata:IsDataSet",  "true")
+ retVal = xmlsetAttribute(elementNode,  "name",  "NewDataSet")
+
+ complexTypeNode = xmlNewNode("xs:complexType",XML_ELEMENT,elementNode) 
+
+ choiceNode = xmlNewNode("xs:choice",XML_ELEMENT,complexTypeNode) 
+ retVal = xmlsetAttribute(choiceNode,  "maxOccurs",  "unbounded")
+ retVal = xmlsetAttribute(choiceNode,  "minOccurs",  "0") 
+
+ elementNode2 = xmlNewNode("xs:element",XML_ELEMENT,choiceNode)
+ retVal = xmlsetAttribute(elementNode2,  "name",  "table") 
+   
+ complexTypeNode2 = xmlNewNode("xs:complexType",XML_ELEMENT,elementNode2)
+ 
+ sequenceNode = xmlNewNode("xs:sequence",XML_ELEMENT,complexTypeNode2)
+ 
+ |数据结构（字段）
+ colNode1 = xmlNewNode("xs:element",XML_ELEMENT,sequenceNode)
+ retVal = xmlsetAttribute(colNode1,  "name",  "XSDDH") 
+ retVal = xmlsetAttribute(colNode1,  "minOccurs",  "0") 
+ retVal = xmlsetAttribute(colNode1,  "type",  "xs:string") 
+
+ colNode2 = xmlNewNode("xs:element",XML_ELEMENT,sequenceNode)
+ retVal = xmlsetAttribute(colNode2,  "name",  "DDCSRQ") 
+ retVal = xmlsetAttribute(colNode2,  "minOccurs",  "0") 
+ retVal = xmlsetAttribute(colNode2,  "type",  "xs:dateTime")
+
+ colNode3 = xmlNewNode("xs:element",XML_ELEMENT,sequenceNode)
+ retVal = xmlsetAttribute(colNode3,  "name",  "WWHID") 
+ retVal = xmlsetAttribute(colNode3,  "minOccurs",  "0") 
+ retVal = xmlsetAttribute(colNode3,  "type",  "xs:string")
+ 
+ colNode4 = xmlNewNode("xs:element",XML_ELEMENT,sequenceNode)
+ retVal = xmlsetAttribute(colNode4,  "name",  "LNHID") 
+ retVal = xmlsetAttribute(colNode4,  "minOccurs",  "0") 
+ retVal = xmlsetAttribute(colNode4,  "type",  "xs:string")
+   
+ 
+|-------------------------------------------------
+|数据内容
+ diffgrNode = xmlNewNode("diffgr:diffgram",XML_ELEMENT,dtNode)
+ retVal = xmlsetAttribute(diffgrNode,  "xmlns:msdata",  "urn:schemas-microsoft-com:xml-msdata") 
+ retVal = xmlsetAttribute(diffgrNode,  "xmlns:diffgr",  "urn:schemas-microsoft-com:xml-diffgram-v1") 
+
+ documentNode = xmlNewNode("DocumentElement",XML_ELEMENT,diffgrNode)
+
+|----------------------------------------------------
+logdate = sprintf$("%u002T%U001+08:00",utc.num(),utc.num())
+logstart = string.set$("-",100)
+|fd = seq.open("D:/Infor/LN/bse/log/log.tdcus2500m070", "wt" )
+if v.relog = tcyesno.yes then
+fd = seq.open("D:/Infor/LN/bse/log/" & trim$(logname), "wt" )
+else
+fd = seq.open("D:/Infor/LN/bse/log/" & trim$(logname), "at" )	
+endif
+seq.puts(to.utf8(logstart),fd)
+seq.puts(to.utf8(logdate),fd)
+seq.puts(to.utf8(logstart),fd)
+
+qnty = 0.00
+|补贴审批单
+select tdsls400.*,tdsls401.*
+from tdsls400,tdsls401
+where tdsls400.orno = tdsls401.orno |and tdsls400.sotp = "SN1" 
+and tdsls400.orno(1;3) in ("S11","S12","S13","S14","S15","S20","S1A","S1B")
+and tdsls400.hdst = 20|处理中
+and tdsls401.clyn = 2
+and tdsls400.orno >= :orno.f and tdsls400.orno <= :orno.t
+|and tdsls400.otbp >= :otbp.f and tdsls400.otbp <= :otbp.t
+and (tdsls400.lxdt <= tdsls400.lmdt and :v.redo = tcyesno.no or :v.redo = tcyesno.yes)|传输日期早于数据更新日期
+order by tdsls400.orno,tdsls401.pono
+selectdo
+
+ |传输日期
+  trdt.0 = tdsls400.odat
+  |trdt = sprintf$("%u002T%U001+08:00",utc.num(),utc.num())
+  trdt = sprintf$("%u002T%U001+08:00",tdsls400.odat,tdsls400.odat)
+
+ 
+ tableNode = xmlNewNode("table",XML_ELEMENT,documentNode)
+ retVal = xmlsetAttribute(tableNode,  "diffgr:id",  "table1") 
+ retVal = xmlsetAttribute(tableNode,  "diffgr:hasChanges",  "inserted") 
+ retVal = xmlsetAttribute(tableNode,  "msdata:rowOrder",  "0") 
+ 
+ xmlNewDataElement("XSDDH", tdsls400.orno ,tableNode)             |销售订单号
+ seq.puts(to.utf8("<XSDDH>" & tdsls400.orno & "</XSDDH>"),fd)
+ xmlNewDataElement("DDCSRQ", trdt ,tableNode)                     |订单传输日期
+ seq.puts(to.utf8("<DDCSRQ>" & trdt & "</DDCSRQ>"),fd)
+ xmlNewDataElement("WWHID",  trim$(tdsls401.corn) ,tableNode)     |万维行ID
+ seq.puts(to.utf8("<WWHID>" & trim$(tdsls401.corn) & "</WWHID>"),fd)
+ xmlNewDataElement("LNHID", str$(tdsls401.pono) ,tableNode)       |行号 
+ seq.puts(to.utf8("<LNHID>" & str$(tdsls401.pono) & "</LNHID>"),fd) 
+
+    |正式预测订单回传-历史记录
+    tdcus318.guid = uuid.generate$()
+    tdcus318.trdt = utc.num()
+    tdcus318.dflg = tcyesno.no
+    tdcus318.uuid = uuid
+    
+    tdcus318.xsddh  = tdsls400.orno
+    tdcus318.ddcsrq = trdt.0 
+    tdcus318.wwhid  = trim$(tdsls401.corn)
+    tdcus318.lnhid  = tdsls401.pono
+  
+    db.insert(ttdcus318,db.retry)
+    commit.transaction()
+    
+    |更新传输日期
+    disable.ue.dll()
+    select tdsls400.*
+    from tdsls400 for update
+    where tdsls400.orno = :tdsls400.orno 
+    selectdo
+    	tdsls400.lxdt = utc.num()
+    	db.update(ttdsls400,db.retry)
+    	commit.transaction()
+    endselect
+    enable.ue.dll()  
+    
+selectempty
+endselect 
+|-------------------------------------------------
+|保存发送请求的XML
+|fd = seq.open("D:/Infor/LN/bse/log/log.tdcus2500m070.xml", "wt" )
+|xmlWritePretty(fd, requestNode, 0 )
+|seq.close(fd)
+|---------------------------------------------
+  soap.addHeader( msgNode, headerNode )
+
+	| Add the method to the SOAP envelope contained the in the SOAP message
+	soap.addMethod( msgNode, requestNode )
+	
+	| Set the SOAP Action
+	soap.setAction( msgNode, "http://tempuri.org/ExecuteProcDataset_Table" )
+	|soap.setAction( msgNode, "" )
+
+	| Invoke the SOAP request
+	status = soap.invoke( msgNode, trim$(urls), responseNode )
+
+	| Check the response
+	if status = 0 then
+		| Get the method result
+		methodNode1 = soap.getMethod( responseNode )
+		methodNode2 = soap.getEnvelope( responseNode )
+		methodNode3 = soap.getBody( responseNode )
+		
+		result = xmlData$( methodNode1)
+|		result = xmlDataElement$( methodNode, "ParamValue" )
+|    message( "SOAP OK:" & trim$(result))
+    if result(1;11) = "@out_Flag 0" then
+      cnt1 = cnt
+    else
+      cnt1 = 0
+      cnt2 = cnt2 + 1
+    endif
+ 
+    
+		seq.puts(to.utf8(logstart),fd)
+    seq.puts(to.utf8(result),fd)
+    
+    |更新传输日期
+|    disable.ue.dll()
+|    select tdsls400.*
+|    from tdsls400 for update
+|    where tdsls400.orno = :tdsls400.orno 
+|    selectdo
+|    	tdsls400.lxdt = utc.num()
+|    	db.update(ttdsls400,db.retry)
+|    	commit.transaction()
+|    endselect
+|    enable.ue.dll()    
+	else
+		cnt2 = cnt
+		| Something went wrong...
+|		message( "SOAP Error: %d", str$(status) & " " & trim$(result))
+	endif
+
+   |Webservice接口调用历史记录
+    tdcus300.ifno = 7080   
+    tdcus300.trdt = utc.num()
+    tdcus300.uuid = uuid
+    tdcus300.cnt0 = cnt
+    tdcus300.cnt1 = cnt1
+    tdcus300.cnt2 = cnt2
+    tdcus300.rtms = trim$(result)
+    tdcus300.tusr = logname$
+    db.insert(ttdcus300,db.retry)
+    commit.transaction()
+    
+	| Cleanup
+	soap.deleteMessage( msgNode )
+	soap.deleteMessage( responseNode )
+	seq.close(fd)
+|-----------------------------------------
+  
+|selectempty
+	|mb.import$(ret.msg,"未找到需要传输的新数据")
+|endselect
+endif
+
+
+  mb.import$(ret.msg,"需要传输的新数据条数:" & str$(cnt) & " 成功条数:" & str$(cnt1) & " 失败条数:" & str$(cnt2))
+  message(trim$(ret.msg))
+	
+}

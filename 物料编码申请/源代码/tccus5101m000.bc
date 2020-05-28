@@ -1,0 +1,55 @@
+|******************************************************************************
+|* tccus5101m000  0  VRC 105U 0  prod
+|* 浗溟浗藱浗浗饋浗瓿浘楓
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-10-15
+|******************************************************************************
+|* Main table tccus501 浗溟浗藱浗瓿浘楓, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+
+  table   ttccus501 | 浗溟浗藱浗瓿浘楓
+
+
+|****************************** program section ********************************
+ after.form.read:
+ string no(9)
+ no=tccus501.wlno
+ on case etol(tccus501.stat)
+ case 1 :
+   group.invisible(7)   
+   disable.satellite("tccus5502m000")
+   break
+ case 2 :  
+  disable.group(5) 
+  disable.group(6)
+  disable.satellite("tccus5502m000")
+   break
+ endcase
+
+ before.display.object:
+  if tccus501.stat<>ltoe(1) then
+   disable.group(5) 
+   disable.group(6)
+  endif
+group.5:
+before.group:
+ if tccus501.stat<>ltoe(1) then
+   disable.group(5) 
+  endif
+
+ field.tccus501.cpcl:
+  selection.filter:
+  query.extend.where.in.zoom("tcmcs062.cpcl in ( select tccus504.cpcl from tccus504 where tccus504.csel ="
+  &quoted.string(tccus501.csel)&")")
+  
+field.tccus501.cpln:
+  selection.filter:
+  query.extend.where.in.zoom("tcmcs061.cpln in ( select tccus505.cpln from tccus505 where tccus505.cpcl ="
+  &quoted.string(tccus501.cpcl)&")")
+
+
+|****************************** group section **********************************
+

@@ -1,0 +1,178 @@
+|******************************************************************************
+|* tppdmex901  0  VRC 105U 0  dev 
+|* 浗涡浗藱浘眴浗戗浗拈浗刚浗魦浗綇
+|* 634772
+|* 19-08-29 [11:14]
+|******************************************************************************
+|* Script Type: Library
+|******************************************************************************
+
+#include <bic_dal>
+#pragma used dll otcmcsdll0050
+table ttppdm901
+table ttppdm902
+table twhinh521
+|extern string err.msg(1000)
+                                                                                
+function extern long make.order(
+domain tccprj clno,
+ref domain tcmcs.s132m err.msg)
+{
+  long ret
+  long rets
+  ret=0	
+  select tppdm901.* from tppdm901 for update where tppdm901.clno=:clno as set with 1 rows
+  selectdo
+    if tppdm901.issc=ltoe(2) then
+      long field.length
+      string ref.mess(100)
+      string shno(9)
+      string cdno(9)	  
+      shno = "ADJ"
+	  cdno="T20"
+      field.length = 9
+      |ret=tcmcs.dll0050.check.and.generate.order.number(2,shno,	"510",field.length,ref.mess)
+      tcmcs.dll0050.read.default.number(shno,"510",field.length,ref.mess)	  
+      ret = dal.new.object("whinh520") |调整订单
+      dal.set.field("whinh520.orno", "ADJ" ) 
+      dal.set.field("whinh520.cwar", tppdm901.cwar ) |仓库
+      dal.set.field("whinh520.emno", tppdm901.emno ) |员工
+      dal.set.field("whinh520.date", utc.num() ) |订单日期
+      dal.set.field("whinh520.adrn", tppdm901.adrn) |调整原因
+      dal.set.field("whinh520.mnad", ltoe(1) ) |人工调整
+      dal.set.field("whinh520.adst", ltoe(10) ) |状态
+      
+      ret = dal.save.object("whinh520")	
+	  
+	  
+      if ret=0 then
+	  
+	    if tppdm901.iscd=ltoe(1) then|是否生成仓单
+		  domain tccshp stco
+		  stco=str$(tppdm901.cwar)
+		  tcmcs.dll0050.read.default.number(cdno,"500",field.length,ref.mess)
+		  |tppdm901.cmba=cdno
+	      ret = dal.new.object("whinh200") |仓单
+          dal.set.field("whinh200.oorg", ltoe(51) ) |订单来源
+		  dal.set.field("whinh200.ittp", ltoe(1) )|ittp 库存事务处理类型
+		  
+		  dal.set.field("whinh200.sfcp", get.compnr() )|sfcp 供货方公司
+		  dal.set.field("whinh200.sfty", ltoe(4) )|sfty 供货方类型 工作中心
+		  dal.set.field("whinh200.sfco", tppdm901.cwoc )|sfco 供货方代码  耗用部门编码
+		  dal.set.field("whinh200.sfad", "AD0000001" )|AD0000001 供货方地址
+		  dal.set.field("whinh200.pddt", utc.num() )|pddt 计划交货日期
+		  
+		  dal.set.field("whinh200.stcp", get.compnr() )|stcp 进货方公司
+		  dal.set.field("whinh200.stty", ltoe(1) )|stty 进货方类型 仓库
+		  dal.set.field("whinh200.stco", stco )|stco 进货方代码  仓库
+		  dal.set.field("whinh200.stad", "AD0000001" )|AD0000001 进货方地址
+		  dal.set.field("whinh200.prdt", utc.num() )|prdt 计划收货日期
+		  
+		  |dal.set.field("whinh200.stlo", tppdm901.loca )|stlo 进货方库位
+		  dal.set.field("whinh200.seri", "T20" )|seri 系列号
+		  dal.set.field("whinh200.otyp", "W75" )|otyp 仓单类型 W75
+		  dal.set.field("whinh200.wdep", tppdm901.cwoc)|wdep 部门 耗用部门
+		  dal.set.field("whinh200.asst", ltoe(5))|asst 装配状态
+		  dal.set.field("whinh200.hsta", ltoe(10))|hsta 页眉状态
+		  dal.set.field("whinh200.odat", utc.num() ) |订单日期	
+      
+          ret = dal.save.object("whinh200")	
+		  if ret<>0 then
+		    dal.get.error.message(err.msg)|设置错误信息
+			abort.transaction()
+			return(ret)
+		    
+		  endif
+	    endif
+	  
+        long orno	 
+	    rets=0
+	    orno=0
+      |long rets=0
+    	select tppdm902.* from tppdm902 where tppdm902.clno=:tppdm901.clno
+    	selectdo
+    	  orno=orno+1
+    	  ret = dal.new.object("whinh521") |调整订单行
+    	  dal.set.field("whinh521.orno", shno ) 
+    	  dal.set.field("whinh521.orno", tppdm902.orno ) 
+    	  dal.set.field("whinh521.cwar", tppdm901.cwar  ) 
+    	  dal.set.field("whinh521.loca", tppdm901.loca  ) 
+    	  dal.set.field("whinh521.item", tppdm902.item  ) 
+    	  dal.set.field("whinh521.qvrr", 0-tppdm902.quan  ) 
+    	  ret = dal.save.object("whinh521") |保存
+          		  
+    	  if ret<>0 then
+		    dal.get.error.message(err.msg)|设置错误信息
+			abort.transaction()
+			return(ret)		    
+		  endif
+		  
+		  |仓单 入库行
+		  if tppdm901.iscd=ltoe(1) then
+		    ret = dal.new.object("whinh210") |入库行
+			dal.set.field("whinh210.oorg", ltoe(51) ) |订单来源			
+    	    dal.set.field("whinh210.orno", cdno ) |订单号 取上面的200表的
+			dal.set.field("whinh210.oset", "1" )|oset 集 取上面的200表的
+    	    dal.set.field("whinh210.orno", tppdm902.orno ) 
+    	    |dal.set.field("whinh210.cwar", tppdm901.cwar  ) 
+    	    |dal.set.field("whinh210.loca", tppdm901.loca  ) 
+    	    dal.set.field("whinh210.item", tppdm902.item  ) |物料编码
+    	    dal.set.field("whinh210.qoro", tppdm902.quan  ) |订单数量
+			dal.set.field("whinh210.qord", tppdm902.quan  ) |收货数量
+    	    ret = dal.save.object("whinh210") |保存
+		  endif
+		   if ret<>0 then
+		    dal.get.error.message(err.msg)|设置错误信息
+			abort.transaction()
+			return(ret)		    
+		  endif
+		  
+		  
+    	endselect
+		if rets=0 then
+		  if tppdm901.iscd=ltoe(1) then
+		    tppdm901.cmba=cdno
+		  endif
+		  tppdm901.orno=shno
+		  tppdm901.issc=ltoe(1)
+		  
+		  |更新价格
+		  select tppdm902.* from tppdm902 for update where tppdm902.clno=:tppdm901.clno 
+		  selectdo
+		    select whinh521.* from whinh521 where whinh521.pono=:tppdm902.orno and whinh521.orno=:shno as set with 1 rows
+			selectdo
+			if whinh521.qadr <> 0 then
+			tppdm902.prce=whinh521.pric/whinh521.qadr
+			endif
+
+			tppdm902.amnt=tppdm902.prce*tppdm902.quan
+		    ret=db.update(ttppdm902,db.retry)
+            endselect
+			
+		  endselect 
+		 
+		  ret=db.update(ttppdm901,db.retry)
+		endif
+      else
+	     mb.import$( err.msg,clno&"已生单，请勿重复生单！")
+		 ret=-1
+	    break        	 
+
+      endif     	
+    endif
+  endselect
+   if ret<>0 or rets<>0 then
+      if err.msg<>"" then
+	  ret=dal.get.error.message(err.msg)|设置错误信息
+	  endif
+      abort.transaction()
+	  ret=1
+	else
+	  ret=0
+	  commit.transaction()	  
+    endif 	
+	
+	return (ret)
+}
+
+

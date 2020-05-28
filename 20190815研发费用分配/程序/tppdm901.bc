@@ -1,0 +1,56 @@
+|******************************************************************************
+|* tppdm901  0  VRC 105U 0  dev 
+|* 
+|* 634772
+|* 19-08-27 [17:20]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+#pragma used dll otppdmdll900
+table ttppdm901
+table twhwmd300
+
+function extern long before.open.object.set()
+{
+	return(0)
+}
+
+function extern boolean ttppdm901.loca.is.valid(long mode)
+{
+  if tppdm901.cwar<>"" or tppdm901.loca<>"" then
+	  select whwmd300.loca from whwmd300 where whwmd300.cwar=:tppdm901.cwar and whwmd300.loca=:tppdm901.loca as set with 1 rows
+	  selectdo 
+	  selectempty
+		return(false)
+	  endselect 
+  endif
+  return(true)
+}
+
+function extern long set.object.defaults()
+{
+    tppdm901.ldte= utc.num()
+    return(0)
+}
+
+function extern long before.save.object(long type)
+{
+ if type = DAL_NEW then	 
+	  tppdm901.clno=Get.OrderNo("CL1")
+	  tppdm901.emno=logname$
+	  tppdm901.cdte=utc.num()
+  endif
+  return(0)
+
+}
+
+function extern long after.destroy.object()
+{
+    delete from  tppdm902 where tppdm902.clno =:tppdm901.clno
+    DELETEERROR       
+      return(-1)
+    enddelete    
+    return(0)
+}

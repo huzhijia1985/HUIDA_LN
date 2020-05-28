@@ -1,0 +1,131 @@
+|******************************************************************************
+|* tcibd9504m000  0  VRC 105U 0  dev 
+|* 
+|* Installation user                                                                                                                                                                                                                                                                                                                                                                                               
+|* 2019-04-28
+|******************************************************************************
+|* Main table tcibd904 浗溟浗藱浗瓿浘楓浘殺浗ァ浗贰浗涅浗熱浗里, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+  table ttcibd901
+  table ttcibd904 | 浗溟浗藱浗瓿浘楓浘殺浗ァ浗贰浗涅浗熱浗里
+  table ttcmcs006
+  long curr.comp
+  long comp.count
+  
+
+|****************************** program section ********************************
+
+	
+field.tcibd904.guid:
+	after.display:
+	message("after")
+	
+field.tcibd904.comp:
+  selection.filter:
+    query.extend.where.in.zoom("ttaad100.pacc="&quoted.string(curr.pacc$))
+  check.input:
+    select tcmcs006.* from tcmcs006 where tcmcs006._compnr=:tcibd904.comp
+	selectdo
+	tcibd904.uset=tcmcs006.uset	
+	display(tcibd904.uset)
+	endselect
+|field.tcibd904.citg: |筛选对应公司数据 不起作用
+|  selection.filter:
+|    query.extend.where.in.zoom("tcmcs023._compnr="&str$(tcibd904.comp))
+|  after.zoom: 
+|
+|	select tcmcs006.* from tcmcs006 where tcmcs006._compnr=:tcibd904.comp
+|	selectdo
+|	tcibd904.uset=tcmcs006.uset	
+|	display(tcibd904.uset)
+|	endselect
+ 
+field.tcibd904.uset: |验证单位集
+  before.checks:
+  check.input:
+	select tcmcs006.* from tcmcs006 where tcmcs006._compnr=:tcibd904.comp and tcmcs006.uset=:tcibd904.uset
+	selectdo
+	selectempty
+		 set.input.error("tcibd904uset")      
+	endselect
+  
+field.tcibd904.pono:
+ before.display: 
+   if choice=add.set then
+   tcibd904.pono=get.max(tcibd904.guid)
+   endif
+   select * from tcibd901 where tcibd901.guid=:tcibd904.guid
+  selectdo
+	if etol(tcibd901.stat)>=3 then	  
+	  disable.group(2)
+	  disable.group(3)
+	 
+	  disable.commands(add.set)
+	  disable.commands(find.data)
+	  disable.commands(def.find)
+	endif	
+  endselect
+  
+
+		
+      
+|****************************** group section **********************************
+main.table.io:
+before.write:
+  if get.MainComp()<=0 then
+    skip.io("tcibd904comp1")
+  endif
+  comp.count=get.sameComp()
+  if comp.count >0 then
+    skip.io("tcibd904comp2")
+  endif
+before.rewrite:
+  if get.MainComp()<=0 then
+    skip.io("tcibd904comp1")
+  endif
+  comp.count=get.sameComp()
+  if comp.count >0 then
+    skip.io("tcibd904comp2")
+  endif
+
+functions:
+function long get.sameComp()
+{
+	comp.count=0
+	select count(guid):comp.count from tcibd904 where tcibd904.guid=:tcibd904.guid 
+	and tcibd904.comp=:tcibd904.comp and tcibd904.pono<>:tcibd904.pono
+	selectdo
+	endselect
+	return(comp.count)
+}
+
+function long get.MainComp()
+{
+	long ret
+	ret=0
+	curr.comp=get.compnr()
+	if curr.comp=tcibd904.comp then
+	  ret=1
+	else
+	  select count(guid):ret from tcibd904 where tcibd904.guid=:tcibd904.guid 
+	  and tcibd904.comp=:curr.comp
+	  selectdo
+	  endselect
+	endif
+	return(ret)
+}
+
+function long get.max(domain tcguid guid)
+{
+	long max.ret
+	select max(pono):max.ret from tcibd904 where tcibd904.guid=:guid
+	selectdo 
+	max.ret=max.ret+1
+	selectempty
+	max.ret=1
+	endselect
+	return(max.ret)
+}

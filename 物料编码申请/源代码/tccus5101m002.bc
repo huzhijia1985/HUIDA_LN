@@ -1,0 +1,82 @@
+|******************************************************************************
+|* tccus5101m002  0  VRC 105U 0  prod
+|* 浗溟浗藱浗浗饋浗瓿浘楓
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-10-15
+|******************************************************************************
+|* Main table tccus501 浗溟浗藱浗瓿浘楓, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+#pragma used dll otccusdll501ws
+#pragma used dll otccusdll501
+table   ttccus501 | 浗溟浗藱浗瓿浘楓
+table   ttccus502
+long ischeck
+
+|****************************** program section ********************************
+before.program:
+  query.extend.where("tccus501.stat=2 and tccus501.xsqd<>'' ") 
+before.display.object: 
+  disable.group(3) 
+  disable.group(4)
+  disable.group(5) 
+  disable.group(6)
+|****************************** group section **********************************
+
+functions:
+function extern do.all.sh()
+{
+  ischeck=0
+	do.selection(true, do.check,2)
+	if ischeck=0 then
+	  do.selection(true, do.sh)
+	  Execute(update.db)
+	  refresh.parent(-1) 
+	else	  
+	  mess("tccus501notsh",1)
+	endif
+	
+}
+
+function extern do.sh()
+{  
+	tccus501.xssh=logname$
+	tccus501.xsdt=utc.num()
+	tccus501.stat=ltoe(6) 
+	sendtz(tccus501.wlno,tccus501.cwus)
+	deletetz(tccus501.wlno,tccus501.xsus)
+}
+
+function extern do.all.js()
+{
+  ischeck=0
+	do.selection(true, do.check,2)
+	if ischeck=0 then
+	  do.selection(true, do.sh)
+	  Execute(update.db)
+	  refresh.parent(-1) 
+	else	  
+	  mess("tccus501notsh",1)
+	endif
+	
+}
+||销售拒审 回退到创建状态
+function extern do.js()
+{  
+	tccus501.xssh=logname$
+	tccus501.xsdt=utc.num()
+	tccus501.stat=ltoe(1) 
+	||sendtz(tccus501.wlno,tccus501.cwus)
+	deletetz(tccus501.wlno,tccus501.xsus)
+}
+function do.check(long stat)
+{
+	if  etol(tccus501.stat)=stat and trim$(tccus501.ctyp)<>"" then
+	  
+		ischeck=ischeck+0
+	else 
+		ischeck=ischeck+1
+	endif 
+}

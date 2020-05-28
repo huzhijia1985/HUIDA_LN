@@ -1,0 +1,40 @@
+|******************************************************************************
+|* tcibd9501m003  0  VRC 105U 0  dev 
+|* 
+|* baan
+|* 19-04-28 [11:27]
+|******************************************************************************
+|* Script Type: 123
+|******************************************************************************
+                                                                                
+|****************************** DECLARATION SECTION ***************************
+declaration:
+  table   ttcibd901 
+  extern domain tcguid main.guid
+|****************************** PROGRAM     SECTION ***************************
+before.program:  
+  import("main.guid", main.guid)  
+|****************************** ZOOM FROM   SECTION ***************************
+|****************************** FORM	     SECTION ***************************
+form.all:
+init.form:
+    disable.group(1)
+	select * from tcibd901 where tcibd901.guid=:main.guid
+	selectdo
+    execute( find.data )
+	execute(display.set)
+	endselect
+|****************************** CHOICE      SECTION ***************************
+|****************************** FIELD       SECTION ***************************
+field.tcibd901.stat:
+	after.display:
+	if etol(tcibd901.stat)>2 then
+	 
+	  disable.commands(add.set)
+	  disable.commands(find.data)
+	  disable.commands(modify.set)
+	  disable.commands(def.find)
+	endif
+|****************************** MAIN TABLE  SECTION ***************************
+|****************************** FUNCTION    SECTION ***************************
+

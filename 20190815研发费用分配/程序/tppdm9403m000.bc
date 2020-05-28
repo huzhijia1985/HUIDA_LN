@@ -1,0 +1,59 @@
+|******************************************************************************
+|* tppdm9403m000  0  VRC 105U 0  dev 
+|* 浘椌浗矅浗艠浗绥浘槂浗属
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-09-04
+|******************************************************************************
+|* Main table tppdm903 浘椌浗矅浗诲浗琐浗φ浗溁浘愯, Form Type 4
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+#pragma used dll otppdmdll903
+
+  table   ttppdm903 | 浘椌浗矅浗诲浗琐浗φ浗溁浘愯
+  table   ttfgld005
+
+   extern  domain  tfgld.year  year
+   extern  domain  tfgld.prod mnth
+
+|****************************** program section ********************************
+
+
+|****************************** group section **********************************
+
+group.1:
+init.group:
+   get.screen.defaults()
+
+|****************************** choice section ********************************
+
+
+
+|****************************** field section *********************************
+
+field.mnth:
+before.zoom:
+  tfgld005.year=year
+zoom.from.all:
+on.entry:
+    import("year", year)
+    import("mnth", mnth)
+
+
+|****************************** function section ******************************
+
+functions:
+function extern void adjust()
+{
+  long ret
+  domain tcmcs.s132m err.msg
+  ret=sbzj.adjust(year,mnth,err.msg)
+  if ret<>0 then
+    message(err.msg)
+  else
+    Execute(end.Program)
+  endif
+}
+
+

@@ -1,0 +1,71 @@
+|******************************************************************************
+|* tccus5401m000  0  VRC 105U 0  prod
+|* IE浗贰浗懈
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-10-27
+|******************************************************************************
+|* Main table tccus501 浗溟浗藱浗瓿浘楓, Form Type 4
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+#pragma used dll otccusdll501
+#pragma used dll otccusdll501ws
+  table   ttccus501 | 浗溟浗藱浗瓿浘楓
+
+   extern  domain  tcyesno  txta.txt
+   extern  domain  tcorno           wlno.f    fixed
+   extern  domain  tcorno           wlno.t    fixed
+   extern  domain  tcorno           wlno
+
+|****************************** program section ********************************
+zoom.from.all:
+on.entry:
+    import("wlno", wlno)
+     select * from tccus501 where tccus501.wlno=:tccus501.wlno
+	   selectdo
+     execute( find.data )
+     
+	endselect
+form.all:
+init.form:
+	select * from tccus501 where tccus501.wlno=:tccus501.wlno
+	selectdo
+    execute( find.data )
+	endselect
+
+choice.update.db:
+before.choice:
+  string errmsg(200) mb
+  long ret
+  ret=insert1(tccus501.wlno,tccus501.tcode,tccus501.csig,tccus501.exin,errmsg)
+    message(errmsg)
+  if ret=1 then
+    deletetz(tccus501.wlno,tccus501.ieus)
+    refresh() 
+    refresh.parent(-1) 
+    exit()  
+  else 
+    refresh()
+    choice.again()
+  endif
+
+ 
+  
+
+
+|****************************** group section **********************************
+
+group.1:
+init.group:
+   get.screen.defaults()
+
+|****************************** choice section ********************************
+
+
+
+|****************************** field section *********************************
+
+|****************************** function section ******************************
+
+

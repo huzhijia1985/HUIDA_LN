@@ -1,0 +1,60 @@
+|******************************************************************************
+|* tppdm903  0  VRC 105U 0  dev 
+|* 
+|* 634772
+|* 19-09-02 [15:39]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+#pragma used dll otppdmdll900
+table  ttppdm903
+table  ttppdm904
+
+function extern long before.open.object.set()
+{
+	return(0)
+}
+function extern long set.object.defaults()
+{
+    tppdm903.sgdt= utc.num()
+    return(0)
+}
+
+
+function extern long before.save.object(long type)
+{
+    if islock(tppdm903.year,tppdm903.mnth)  then
+	    dal.set.error.message("tppdm907lock",tppdm903.year,tppdm903.mnth)
+		return(1)
+	endif
+    if type = DAL_NEW then	
+	  
+	  tppdm903.sgno=Get.OrderNo("SB1")
+	  tppdm903.emno=logname$
+	  tppdm903.cdat=utc.num()
+    endif
+	return(0)
+}
+
+function extern long before.destroy.object()
+{
+    if islock(tppdm903.year,tppdm903.mnth)  then
+	    dal.set.error.message("tppdm907lock",tppdm903.year,tppdm903.mnth)
+		return(1)
+	endif
+    
+    return(0)
+}
+
+function extern long after.destroy.object()
+{
+    delete from  tppdm904 where tppdm904.sgno =:tppdm903.sgno
+    DELETEERROR 
+      
+      return(-1)
+    enddelete    
+    return(0)
+}
+

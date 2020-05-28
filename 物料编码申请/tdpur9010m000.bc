@@ -1,0 +1,452 @@
+|******************************************************************************
+|* tisfc9001m000  0  VRC 105U 0  dev 
+|* 浗湝浗笱浘撃浗屑浗湸浗琐浘愯
+|* Installation user                                                                                                                                                                                                                                                                                                                                                                                               
+|* 2018-11-24
+|******************************************************************************
+|* Main table tisfc901 I001-浗湝浗笱浘撃浗屑浗湸浗琐浘愯, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+#include <bic_soap>
+#include <bic_curl>
+#include <bic_desktop>
+#pragma used dll otccus99990000
+|#include <bic_dal> 
+#pragma  used dll ottstpapihand
+#pragma  used dll ottdllbw
+#include <bic_dam> 
+
+  table   ttdpur901
+  table   ttdpur400
+  table   ttdpur401
+  table 	tttaad200
+
+
+   extern  domain  tcorno           orno.f    fixed
+   string extend.sql(200)
+
+before.program:
+	import("tdpur400.orno",orno.f)
+	|query.extend.select("tdpur901.*")
+	
+after.form.read:
+if trim$(orno.f)<>"" then
+	query.extend.from("tdpur901")
+|query.extend.where("tdpur901.orno="&orno.f, EXTEND_OVERWRITE)
+
+ extend.sql = "tdpur901.orno='" & orno.f&"'"
+      query.extend.where(extend.sql, EXTEND_OVERWRITE)
+endif
+	
+choice.send.msg:
+on.choice:
+	do.selection(true, send.msg, tdpur901.orno)
+|****************************** program section ********************************
+
+
+
+|****************************** group section **********************************
+
+
+functions:
+
+
+function void send.msg(domain tcorno orno)
+{
+	long msgNode
+	long NameSpace_tem
+	long headerNode
+	long headerNode_myHeader
+	long bodyNode
+	long requestNode
+	long responseNode
+	long methodNode
+	long paramNode
+	long dataNode
+
+	long status
+	string result(128)
+	string ret.msg(1000)mb
+	string docSubject(100)mb
+	string formValues(1500)mb
+	long ret, file.pointer
+	long read.num, correct.num, error.num
+	long check.tdpur401,check.tdpur901
+	domain tcyesno check.otbp,check.cotp,check.cofc,check.ccon,check.ccur,check.oamt,check.cacl
+	string cacl.flag(1)
+
+	domain tcitem temp.item
+	string date.str(19)
+	domain tfgld.user loguser
+	string logname(100)mb,docsub1(200)mb,docsub2(200)mb
+	domain tcmcs.str1 recrt
+	recrt="2"
+  long fd
+  string logdate(25)
+  string logstart(100)
+  domain tcdate utc
+  
+  utc = utc.num()
+
+	read.num = 0
+	correct.num = 0
+	error.num = 0
+	docSubject=""
+	formValues=""
+	check.tdpur401=0
+	check.tdpur901=0
+	cacl.flag=""
+	loguser=logname$
+	logname=""
+	docsub1=""
+	docsub2=""
+	|check.otbp=tcyesno.yes
+	|check.cotp=tcyesno.yes
+	|check.cofc=tcyesno.yes
+	|check.ccon=tcyesno.yes
+	|check.ccur=tcyesno.yes
+	|check.oamt=tcyesno.yes
+	|check.cacl=tcyesno.yes
+	ret.msg=""
+	
+	select tdpur901.*
+	from tdpur901
+	where tdpur901.orno=:orno
+	as set with 1 rows 
+	selectdo
+		recrt=tdpur901.recrt
+	endselect
+		
+	select tdpur901.*
+	from tdpur901
+	where tdpur901.orno=:orno
+	and tdpur901.hdst=tdpur.subhdst.transfer
+	as set with 1 rows 
+	selectdo
+		recrt=tdpur901.recrt
+		mb.import$(ret.msg,"0:采购单"&tdpur401.orno&"已推送，不能再次推送")
+		update.tdpur901(orno,tdpur.subhdst.transfer,tcyesno.no,"2",ret.msg)
+	selectempty
+			
+		select tdpur400.*
+		from tdpur400
+		where tdpur400.orno=:orno
+		as set with 1 rows
+		selectdo
+			if tdpur400.hdst=ltoe(5) or tdpur400.hdst=ltoe(30) then
+				if tdpur400.hdst=ltoe(30) then
+					cacl.flag="1"
+				else 
+					cacl.flag="2"
+				endif
+				select tdpur901.*
+				from tdpur901
+				where tdpur901.orno=:orno
+				and tdpur901.hdst=tdpur.subhdst.submit
+				selectdo
+					check.tdpur901=check.tdpur901+1
+					if ret.msg="" and tdpur400.otbp<>tdpur901.otbp then
+						|check.otbp=tcyesno.no
+						mb.import$(ret.msg,"0:采购单"&orno&"业务伙伴"&tdpur400.otbp&"与中间表业务伙伴"&tdpur901.otbp&"不一致")
+					endif
+					if ret.msg="" and tdpur400.cotp<>tdpur901.cotp then
+						|check.cotp=tcyesno.no
+						mb.import$(ret.msg,"0:采购单"&orno&"类型"&tdpur400.cotp&"与中间表订单类型"&tdpur901.cotp&"不一致")
+					endif
+					if ret.msg="" and tdpur400.cofc<>tdpur901.cofc then
+						|check.cofc=tcyesno.no
+						mb.import$(ret.msg,"0:采购单"&orno&"部门"&tdpur400.cofc&"与中间表订单部门"&tdpur901.cofc&"不一致")
+					endif
+					if ret.msg="" and tdpur400.ccon<>tdpur901.ccon then
+						|check.ccon=tcyesno.no
+						mb.import$(ret.msg,"0:采购单"&orno&"采购员"&tdpur400.ccon&"与中间表订单采购员"&tdpur901.ccon&"不一致")
+					endif
+					if ret.msg="" and tdpur400.ccur<>tdpur901.ccur then
+						|check.ccur=tcyesno.no
+						mb.import$(ret.msg,"0:采购单"&orno&"币种"&tdpur400.ccur&"与中间表订单币种"&tdpur901.ccur&"不一致")
+					endif
+					if ret.msg="" and tdpur400.oamt<>tdpur901.oamt then
+						|check.oamt=tcyesno.no
+						mb.import$(ret.msg,"0:采购单"&orno&"金额"&str$(tdpur400.oamt)&"与中间表订单金额"&str$(tdpur901.oamt)&"不一致")
+					endif
+					if ret.msg="" and ltoe(lval(cacl.flag))<>tdpur901.cacl then
+						|check.cacl=tcyesno.no
+						mb.import$(ret.msg,"0:采购单"&orno&"取消状态"&cacl.flag&"与中间表订单类型"&str$(tdpur901.cacl)&"不一致")
+					endif
+				endselect
+				
+				if ret.msg="" then
+					select tdpur401.*
+					from tdpur401
+					where tdpur401.orno=:orno
+					selectdo
+						check.tdpur401=check.tdpur401+1
+						select tdpur901.*
+						from tdpur901
+						where tdpur901.orno=:tdpur401.orno
+						and tdpur901.pono=:tdpur401.pono
+						selectdo
+							if ret.msg="" and tdpur401.item<>tdpur901.item then
+								|check.cacl=tcyesno.no
+								mb.import$(ret.msg,"0:采购单"&orno&"-"&str$(tdpur401.pono)&"物料"&trim$(tdpur401.item)&"与中间表物料"&trim$(tdpur901.item)&"不一致")
+							endif
+							if ret.msg="" and double.cmp(tdpur401.qoor,tdpur901.qoor,0.01)<>0 then
+								|check.cacl=tcyesno.no
+								mb.import$(ret.msg,"0:采购单"&orno&"-"&str$(tdpur401.pono)&"数量"&str$(tdpur401.qoor)&"与中间表数量"&str$(tdpur901.qoor)&"不一致")
+							endif
+							if ret.msg="" and tdpur401.cuqp<>tdpur901.cuqp then
+								|check.cacl=tcyesno.no
+								mb.import$(ret.msg,"0:采购单"&orno&"-"&str$(tdpur401.pono)&"单位"&trim$(tdpur401.cuqp)&"与中间表物料"&trim$(tdpur901.cuqp)&"不一致")
+							endif
+							if ret.msg="" and double.cmp(tdpur401.pric,tdpur901.pric,0.01)<>0 then
+								|check.cacl=tcyesno.no
+								mb.import$(ret.msg,"0:采购单"&orno&"-"&str$(tdpur401.pono)&"价格"&str$(tdpur401.pric)&"与中间表价格"&str$(tdpur901.pric)&"不一致")
+							endif
+							if ret.msg="" and double.cmp(tdpur401.oamt,tdpur901.lamt,0.01)<>0 then
+								|check.cacl=tcyesno.no
+								mb.import$(ret.msg,"0:采购单"&orno&"-"&str$(tdpur401.oamt)&"行金额"&str$(tdpur401.qoor)&"与中间表行金额"&str$(tdpur901.lamt)&"不一致")
+							endif
+						
+						selectempty
+							if ret.msg="" then
+								|check.otbp=tcyesno.no
+								mb.import$(ret.msg,"0:采购单"&orno&"-行"&str$(tdpur401.pono)&"未提交中间表")
+							endif
+						endselect
+					endselect
+					
+					if ret.msg="" then
+						if check.tdpur901=check.tdpur401 then
+							
+							msgNode = soap.NewMessage(URI_SOAP11)
+							headerNode_myHeader = xmlNewNode("MyHeader", XML_ELEMENT, headerNode)
+							NameSpace_tem = xmlNewNamespace(headerNode_myHeader, "tem", "http://tempuri.org/")
+							|xmlSetNamespace(headerNode_myHeader, NameSpace_tem)
+					
+							|xmlNewDataElementNs(NameSpace_tem, "UserID", "admin", headerNode_myHeader)
+							|headerNode_myHeader附加"UserID", "admin"
+							|xmlNewDataElementNs(NameSpace_tem, "PassWord", "admin", headerNode_myHeader)
+					
+							|soap.addHeader(msgNode, headerNode_myHeader)
+							|结构headerNode_myHeader附加到msgNode
+					
+							requestNode = xmlNewNode("addReview", XML_ELEMENT, bodyNode)
+							|requestNode初始化
+							xmlSetNamespace(requestNode, NameSpace_tem)
+							|标题名扩展
+							|xmlNewDataElementNs(NameSpace_tem, "spName", "addReview", requestNode)
+							|将中间结构"spName", "Proc_erp_scheduling_Add"附加到requestNode
+							requestNode = xmlNewNode("addReview", XML_ELEMENT, requestNode)
+							xmlSetNamespace(paramNode, NameSpace_tem)
+							|扩展名称
+							|paramNode = xmlNewNode("arg0", XML_ELEMENT, paramNode)
+							|xmlSetNamespace(paramNode, NameSpace_tem)
+							|* @in_OrgID
+							dataNode = xmlNewNode("arg0", XML_ELEMENT, requestNode)
+							select ttaad200.*
+							from ttaad200
+							where ttaad200.user=:logname$
+							and ttaad200._compnr=0
+							as set with 1 rows
+							selectdo
+								logname=trim$(ttaad200.name)
+							endselect
+							
+							|mb.import$(docSubject,"采购订单提交人"&logname&"发起的ERP采购订单号为"&orno&"的采购申请表")
+							mb.import$(docsub1,"采购订单提交人")
+							docsub1=docsub1 & logname
+							mb.import$(docsub2,"发起的ERP采购订单号为" & orno & "的采购申请表")
+							docSubject=docsub1 & docsub2
+							|mb.import$(formValues,"{'comp':'790','orno':'P01000261', 'otbp':'100000001','cotp':'PO7','cofc':'1C1101','ccon':'800013','ccur':'CNY','oamt':'150.0','cacl':'2','fd_DetailTable':{'fd_DetailTable.pono':['10'],'fd_DetailTable.item':['1000005702'], ' fd_DetailTable.dsca':['test001'],'fd_DetailTable.qoor':['1'], ' fd_DetailTable.cuqp':['pcs'], ' fd_DetailTable.pric':['150'], ' fd_DetailTable.lamt':['150.0']}}")
+							|mb.import$(formValues,"{'comp':'"&str$(get.compnr())&"','orno':'"&orno&"', 'otbp':'"&tdpur400.otbp&"', 'recrt':'"&recrt&"','cotp':'"&tdpur400.cotp&"','cofc':'"&tdpur400.cofc&"','ccon':'"&str$(tdpur400.ccon)&"','ccur':'"&tdpur400.ccur&"','oamt':'"&str$(tdpur400.oamt)&"','cacl':'"&cacl.flag&"'}")
+							mb.import$(formValues,"{'comp':'"&str$(get.compnr())&"','orno':'"&orno&"', 'otbp':'"&tdpur400.otbp&"' , 'recrt':'"&recrt&"','cotp':'"&tdpur400.cotp&"','cofc':'"&tdpur400.cofc&"','ccon':'"&str$(tdpur400.ccon)&"','ccur':'"&tdpur400.ccur&"','oamt':'"&str$(tdpur400.oamt)&"','cacl':'"&cacl.flag&"'}")
+							
+							|----------------------------------------------------
+							logdate = sprintf$("%u002T%U001+08:00",utc.num(),utc.num())
+							logstart = string.set$("-",100)
+							|if v.relog = tcyesno.yes then
+							|if exist("D:/Infor/LN/bse/log/log.tdpur9010m000.test.txt") then
+								fd = seq.open("D:/Infor/LN/bse/log/log.tdpur9010m000.test.txt", "wt" )
+							|else
+							|	fd = seq.open("D:/Infor/LN/bse/log/log.tdpur9010m000.test.txt", "at" ) 
+							|endif
+							seq.puts(to.utf8(logstart),fd)
+							seq.puts(to.utf8(logdate),fd)
+							seq.puts(to.utf8(logstart),fd)
+							
+							|ret = xmlNewDataElement("docCreator", "{'PersonNo': 'zhangzhen'}", dataNode)
+ 							|seq.puts(to.utf8("<docCreator>" & "{'PersonNo': 'zhangzhen'}" & "</docCreator>"),fd)
+							ret = xmlNewDataElement("docCreator", "{'PersonNo': '"&logname$&"'}", dataNode)
+ 							seq.puts(to.utf8("<docCreator>" & "{'PersonNo': '"&logname$&"'}" & "</docCreator>"),fd)
+							ret = xmlNewDataElement("docSubject", docSubject, dataNode)
+ 							seq.puts(to.utf8("<docSubject>" & docSubject & "</docSubject>"),fd)
+							ret = xmlNewDataElement("fdTemplateId", "16d04a38a3687dcf537e6b94b93af17c", dataNode)
+ 							seq.puts(to.utf8("<fdTemplateId>" & "16d04a38a3687dcf537e6b94b93af17c" & "</fdTemplateId>"),fd)
+							ret = xmlNewDataElement("formValues", formValues, dataNode)
+ 							seq.puts(to.utf8("<formValues>" & formValues & "</formValues>"),fd)
+							
+							
+					
+							soap.addMethod(msgNode, requestNode)
+							|* Invoke SOAP
+							status = soap.invoke(msgNode, 
+								|"http://oa.huidagroups.com:99/sys/webservice/kmReviewWebserviceService?wsdl", responseNode)
+								 "http://oa.huidagroups.com:99/sys/webservice/erpLnReviewWebserviceService?wsdl", responseNode)
+							read.num = read.num + 1
+							if status = 0 then
+								ret = soap.getFault(responseNode)
+								if ret <> 0 then
+									error.num = error.num + 1
+									display.fld(actual.occ, "error.num")
+									mb.import$(ret.msg,"0:传输失败")
+									update.tdpur901(orno,tdpur.subhdst.other,tcyesno.no,"2",ret.msg)
+								else
+									methodNode = soap.getMethod(responseNode)
+									result = xmlData$(methodNode)
+									mb.import$(ret.msg,"1:"&result)
+ 									seq.puts(to.utf8("<getback>" & result & "</getback>"),fd)
+									update.tdpur901(orno,tdpur.subhdst.transfer,tcyesno.yes,"1",ret.msg)
+									|if result(11;1) = "0" then
+									|	correct.num = correct.num + 1
+									|	display.fld(actual.occ, "correct.num")
+									|	mb.import$(ret.msg,"1:OK")
+									|	update.tdpur901(orno,tdpur.subhdst.transfer,tcyesno.yes,"1",ret.msg)
+									|else
+									|	error.num = error.num + 1
+									|	display.fld(actual.occ, "error.num")
+									|	mb.import$(ret.msg,"0:"&result)
+									|	update.tdpur901(orno,tdpur.subhdst.other,tcyesno.no,"2",ret.msg)
+									|endif
+								endif
+							else
+								error.num = error.num + 1
+								display.fld(actual.occ, "error.num")
+								mb.import$(ret.msg,"0:传输失败")
+								update.tdpur901(orno,tdpur.subhdst.other,tcyesno.no,"2",ret.msg)
+							endif
+							
+					    seq.puts(to.utf8(logstart),fd)
+					    seq.puts(to.utf8(ret.msg),fd)
+							
+							refresh.curr.occ()
+							|file.pointer = seq.open("D:\Infor\ln\bse\log\log.tisfc9009m000.xml", "wt+")
+							|ret = xmlWritePretty(file.pointer, responseNode, 0)
+							|seq.close(file.pointer)
+							|ret = server2client("D:\Infor\ln\bse\log\log.tisfc9009m000.xml", 
+							|	"d:\log.tisfc9009m000.xml", true, false, false)
+							|file.pointer = seq.open("D:\Infor\ln\bse\log\log.tisfc9009m000.request.xml", "wt+")
+							|ret = xmlWritePretty(file.pointer, msgNode, 0)
+							|seq.close(file.pointer)
+							|ret = server2client("D:\Infor\ln\bse\log\log.tisfc9009m000.request.xml", 
+							|	"d:\log.tisfc9009m000.request.xml", true, false, false)
+					
+							soap.deleteMessage(msgNode)
+							soap.deleteMessage(responseNode)
+ 							seq.close(fd)
+						else
+							mb.import$(ret.msg,"0:采购单"&tdpur401.orno&"行数"&str$(check.tdpur401)&"与中间表已提交行数"&str$(check.tdpur901)&"不匹配")
+							update.tdpur901(orno,tdpur.subhdst.other,tcyesno.no,"2",ret.msg)
+						endif
+					else
+						update.tdpur901(orno,tdpur.subhdst.other,tcyesno.no,"2",ret.msg)
+					endif
+				else
+					update.tdpur901(orno,tdpur.subhdst.other,tcyesno.no,"2",ret.msg)
+				endif
+			else
+				mb.import$(ret.msg,"0:采购单"&tdpur401.orno&"非已创建或已取消状态不能发送")
+				update.tdpur901(orno,tdpur.subhdst.other,tcyesno.no,"2",ret.msg)
+			endif
+		selectempty
+			mb.import$(ret.msg,"0:查找不到对应采购单"&tdpur401.orno&"信息")
+			update.tdpur901(orno,tdpur.subhdst.other,tcyesno.no,"2",ret.msg)
+		endselect
+	endselect
+	
+}
+
+
+function extern	update.tdpur901(domain tcorno orno,
+														domain tdpur.subhdst hdst,
+														domain tcyesno flag1,
+														domain tcmcs.str1 update.force,|1是2否
+														domain tcmcs.str60m edesc)
+{
+string err.msg(1000)mb,ret1.msg(1000)mb
+long ret
+ret=0
+err.msg=""
+ret1.msg=""
+
+	select tdpur901.*
+	from tdpur901 for update
+  	where tdpur901.orno=:orno
+	selectdo
+			dal.change.object("tdpur901")
+			if tdpur901.flag1<>flag1  then
+				dal.set.field("tdpur901.flag1",flag1)
+			endif
+			if update.force="1" then
+				if tdpur901.hdst<>hdst  then
+					dal.set.field("tdpur901.hdst",hdst)
+				endif
+			endif
+			if trim$(edesc)<>"" then
+				dal.set.field("tdpur901.edesc",edesc)
+			endif
+			if update.force="1" and hdst=tdpur.subhdst.transfer and tdpur901.recrt="2" then
+				dal.set.field("tdpur901.recrt","1")
+			endif
+				dal.set.field("tdpur901.uuser",logname$)
+				dal.set.field("tdpur901.udate",utc.num())
+			|db.update(ttdpur901,db.retry)
+			dal.save.object("tdpur901")
+			commit.transaction()
+	selectempty
+	endselect	
+	
+	if update.force="1" and hdst=tdpur.subhdst.transfer then
+		select tdpur901.*
+		from tdpur901 for update
+	  where tdpur901.orno=:orno
+	  and tdpur901.hdst<>tdpur.subhdst.transfer
+	  as set with 1 rows
+		selectdo
+		selectempty
+			select tdpur400.*
+			from tdpur400 for update
+			where tdpur400.orno=:orno
+			and tdpur400.ihdst<>tdpur.subhdst.transfer
+			as set with 1 rows
+			selectdo
+				|dal.change.object("tdpur400")
+				|dal.set.field("tdpur400.ihdst",hdst)
+				tdpur400.ihdst=tdpur.subhdst.transfer|hdst
+				|dal.save.object("tdpur400")
+				db.update(ttdpur400,db.retry)
+				commit.transaction()
+			endselect
+		endselect
+	endif
+		
+	}
+
+function string handle.date(domain tcdate i.date)
+{
+	string date.str(30)
+
+	date.str = utc.to.iso(i.date, UTC_ISO_LOCAL)
+	date.str = date.str(1;10) & " " & date.str(12;8)
+	return(date.str)
+}
+
+function string to.utf8(string tss.str(4000) mb)
+{
+    string utf8str(4000*4)
+    utf8.export(utf8str, tss.str, UTF8_STD_MODE)
+    return(utf8str)
+}
+
+

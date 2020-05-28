@@ -1,0 +1,516 @@
+#include <bic_dal>
+#pragma used dll otppdmdll900
+table ttppdm912 |ttppdm912 | 人资考勤单
+table ttppdm913|ttppdm913
+table ttppdm914|ttppdm914  | 研发考勤单
+table ttppdm915|ttppdm915  |
+table ttppdm918  |考勤期间锁定表
+
+
+|function calc
+
+function extern long rzkq.adjust(domain tfgld.year year,
+domain tfgld.prod mnth,ref domain tcmcs.s132m err.msg)
+{
+    long ret 
+    string yfno(9)
+    string emno(50)
+    
+    string dimx(50)
+    double da01
+    double da02
+    double da03
+    double da04
+    double da05
+    double da06
+    double da07
+    double da08
+    double da09
+    double da10
+    double da11
+    double da12
+    double da13
+    double da14
+    double da15
+    double da16
+    double da17
+    double da18
+    double da19
+    double da20
+    double da21
+    double da22
+    double da23
+    double da24
+    double da25
+    double da26
+    double da27
+    double da28
+    double da29
+    double da30
+    double da31
+    double gshj
+    double zjje
+    double mnths   |	月数
+    double gz |工资
+    double jj |奖金
+    double jxj |绩效奖
+    double ylbx   |	养老保险
+    double yibx  |	医疗保险
+    double sybx   |	失业保险
+    double gjj |公积金
+    double shbx   |	生育保险
+    double gsbx   |	工伤保险
+    double amnt
+ 
+    string sbs(1000)
+    dimx=""
+
+    ret=0
+    sbs=""
+    | db.retry.point()
+
+    select  tppdm915.emno from tppdm915,tppdm914  where tppdm914.year=:year and tppdm914.mnth=:mnth and tppdm914.issc=2
+    and not (tppdm915.emno in ( select tppdm913.emno from tppdm913,tppdm912 where tppdm912.year=:year and tppdm912.mnth=:mnth  and tppdm913.rzno refers to tppdm912.rzno ))
+    and tppdm915.yfno refers to tppdm914.yfno
+    selectdo
+      sbs=sbs&trim$(tppdm915.emno)&";"      
+    endselect
+    if sbs<>"" then 
+      ret=mb.import$ (err.msg,"研发考勤单中存在人资考勤单中没有的员工"&sbs)
+      return(-1)
+    endif
+    
+    |更新 期间信息
+    select tppdm918.* from tppdm918 for update where tppdm918.year=:year and tppdm918.mnth=:mnth
+    selectdo
+      if tppdm918.lock=ltoe(2) then 
+        |未锁定不能计算 提示错误
+        ret=mb.import$ (err.msg,"当前期间未锁定，不能进行计算")
+        return(-1)
+      else 
+        |已锁定的话需要更新锁定状态然后计算 
+        tppdm918.lock=ltoe(2)
+        ret=db.update(ttppdm918,db.retry)
+      endif
+    selectempty
+      |没有锁定期间不能进行计算
+      ret=mb.import$ (err.msg,"期间不存在，不能进行计算")
+      return(-1)
+    endselect
+   
+    |删除设备工时表中对应期间的数据
+    delete from  tppdm915 where tppdm915.yfno in (select yfno from tppdm914 where tppdm914.year=:year and tppdm914.mnth=:mnth and tppdm914.issc=1 )
+    DELETEERROR    
+      abort.transaction()
+      return(-1)
+    enddelete
+    delete from tppdm914  where tppdm914.year=:year and tppdm914.mnth=:mnth and tppdm914.issc=1
+    DELETEERROR    
+      abort.transaction()
+      return(-1) 
+    enddelete
+    |查询考勤表中对应期间的数据
+    select tppdm913.* from  tppdm913 for update,tppdm912 
+    where tppdm912.year=:year and tppdm912.mnth=:mnth and tppdm913.rzno refers to tppdm912.rzno   
+    order by tppdm913.dimx,tppdm913.emno 
+    selectdo  
+     emno=tppdm913.emno
+
+      select * from tppdm915 for update ,tppdm914 where tppdm915.emno=:tppdm913.emno and tppdm914.year=:year and tppdm914.mnth=:mnth  and tppdm914.issc=2
+      and tppdm915.yfno refers to tppdm914.yfno  
+      selectdo
+        ret=dal.get.object("tppdm915",true,"tppdm915.yfno",tppdm915.yfno,"tppdm915.orno",tppdm915.orno) 
+       	dal.set.field("tppdm915.mnth",tppdm915.gshj*tppdm913.mnxs)   |	月数
+        dal.set.field("tppdm915.gz",  tppdm915.gshj*tppdm913.gzxs) |工资
+        dal.set.field("tppdm915.jj",  tppdm915.gshj*tppdm913.jjxs) |奖金
+        dal.set.field("tppdm915.jxj", tppdm915.gshj*tppdm913.jxxs) |绩效奖
+	      dal.set.field("tppdm915.ylbx",tppdm915.gshj*tppdm913.ylxs)   |	养老保险
+	      dal.set.field("tppdm915.yibx",tppdm915.gshj*tppdm913.yixs)   |	医疗保险
+	      dal.set.field("tppdm915.sybx",tppdm915.gshj*tppdm913.syxs)   |	失业保险
+        dal.set.field("tppdm915.gjj", tppdm915.gshj*tppdm913.gjxs) |公积金
+	      dal.set.field("tppdm915.shbx",tppdm915.gshj*tppdm913.shxs)   |	生育保险
+	      dal.set.field("tppdm915.gsbx",tppdm915.gshj*tppdm913.gsxs)   |	工伤保险          
+        ret=dal.save.object("tppdm915")
+        if ret<>0 then
+          ret=dal.get.error.message(err.msg)
+          return(-1)         
+        endif
+      endselect     
+     
+      da01=0
+      da02=0
+      da03=0
+      da04=0
+      da05=0
+      da06=0
+      da07=0
+      da08=0
+      da09=0
+      da10=0
+      da11=0
+      da12=0
+      da13=0
+      da14=0
+      da15=0
+      da16=0
+      da17=0
+      da18=0
+      da19=0
+      da20=0
+      da21=0
+      da22=0
+      da23=0
+      da24=0
+      da25=0
+      da26=0
+      da27=0
+      da28=0
+      da29=0
+      da30=0
+      da31=0
+      gshj=0
+      zjje=0
+      mnths=0
+      gz =0
+      jj =0
+      jxj =0
+      ylbx=0
+      yibx=0
+      sybx=0
+      gjj =0
+      shbx=0
+      gsbx=0
+      amnt=0
+      |locd=tffam500.locd
+      select sum(tppdm915.da01):da01,
+      sum(tppdm915.da02):da02,
+      sum(tppdm915.da03):da03,
+      sum(tppdm915.da04):da04,
+      sum(tppdm915.da05):da05,
+      sum(tppdm915.da06):da06,
+      sum(tppdm915.da07):da07,
+      sum(tppdm915.da08):da08,
+      sum(tppdm915.da09):da09,
+      sum(tppdm915.da10):da10,
+      sum(tppdm915.da11):da11,
+      sum(tppdm915.da12):da12,
+      sum(tppdm915.da13):da13,
+      sum(tppdm915.da14):da14,
+      sum(tppdm915.da15):da15,
+      sum(tppdm915.da16):da16,
+      sum(tppdm915.da17):da17,
+      sum(tppdm915.da18):da18,
+      sum(tppdm915.da19):da19,
+      sum(tppdm915.da20):da20,
+      sum(tppdm915.da21):da21,
+      sum(tppdm915.da22):da22,
+      sum(tppdm915.da23):da23,
+      sum(tppdm915.da24):da24,
+      sum(tppdm915.da25):da25,
+      sum(tppdm915.da26):da26,
+      sum(tppdm915.da27):da27,
+      sum(tppdm915.da28):da28,
+      sum(tppdm915.da29):da29,
+      sum(tppdm915.da30):da30,
+      sum(tppdm915.da31):da31,
+      sum(tppdm915.gshj):gshj,
+      sum(tppdm915.gshj):gshj,
+      |sum(zjje):zjje,
+      sum(tppdm915.mnth):mnths,
+      sum(tppdm915.gz ):gz ,
+      sum(tppdm915.jj ):jj ,
+      sum(tppdm915.jxj ):jxj ,
+      sum(tppdm915.ylbx):ylbx,
+      sum(tppdm915.yibx):yibx,
+      sum(tppdm915.sybx):sybx,
+      sum(tppdm915.gjj ):gjj ,
+      sum(tppdm915.shbx):shbx,
+      sum(tppdm915.gsbx):gsbx,
+      sum(tppdm915.amnt):amnt from tppdm915,tppdm914 where tppdm914.year=:year and tppdm914.mnth=:mnth 
+      and tppdm915.emno=:emno
+      and tppdm915.yfno refers to tppdm914.yfno      
+      selectdo        
+      selectempty  
+      endselect
+      
+      ret =double.cmp(tppdm913.gshj ,gshj,0.000001)
+      ON CASE ret
+      case 0:|全部为研发工时 ，验证尾差
+        if tppdm913.amnt <>amnt then
+          select tppdm915.* from tppdm915 for update,tppdm914 where tppdm914.year=:year and tppdm914.mnth=:mnth and tppdm915.emno=:emno as set with 1 rows 
+          selectdo
+            tppdm915.mnth=tppdm915.mnth+tppdm913.mnth-mnths
+            tppdm915.gz =tppdm915.gz +tppdm913.gz - gz 
+            tppdm915.jj =tppdm915.jj +tppdm913.jj - jj 
+            tppdm915.jxj=tppdm915.jxj+tppdm913.jxj-jxj 
+            tppdm915.ylbx=tppdm915.ylbx+tppdm913.ylbx-ylbx
+            tppdm915.yibx=tppdm915.yibx+tppdm913.yibx-yibx
+            tppdm915.sybx=tppdm915.sybx+tppdm913.sybx-sybx
+            tppdm915.gjj=tppdm915.gjj+tppdm913.gjj-gjj 
+            tppdm915.shbx=tppdm915.shbx+tppdm913.shbx-shbx
+            tppdm915.gsbx=tppdm915.gsbx+tppdm913.gsbx-gsbx
+            tppdm915.amnt=tppdm915.gz+tppdm915.jj+tppdm915.jxj+tppdm915.ylbx+tppdm915.yibx+tppdm915.sybx
+	          +tppdm915.gjj+tppdm915.shbx+tppdm915.gsbx
+            ret=db.update(ttppdm915,db.retry)
+            if ret<>0 then               
+              ret=dal.get.error.message(err.msg)             
+              abort.transaction()
+              return(-1)         
+            endif
+          endselect
+        endif
+        break
+      case 1: |总工时大于研发工时
+        if tppdm913.dimx<>dimx then
+        |部门不同，创建新的生产工时单
+           yfno=Read.OrderNo("KQ2")            
+          |********************************
+            ret=dal.new.object("tppdm914")
+            dal.set.field("tppdm914.year",year)
+            dal.set.field("tppdm914.mnth",mnth)
+            dal.set.field("tppdm914.cwoc",tppdm913.dimx)            
+            dal.set.field("tppdm914.szdt",utc.num())
+            dal.set.field("tppdm914.issc",ltoe(1))
+            ret=dal.save.object("tppdm914")
+            dimx=tppdm913.dimx
+            if ret<>0 then               
+              ret=dal.get.error.message(err.msg)
+              abort.transaction()
+              return(-1) 
+            | else
+            |   commit.transaction()          
+            endif  
+        endif
+        ret=dal.new.object("tppdm915")
+        dal.set.field("tppdm915.yfno",yfno)
+        dal.set.field("tppdm915.ydep",dimx)
+        dal.set.field("tppdm915.prno",199999999)
+        dal.set.field("tppdm915.emno",tppdm913.emno)        
+        dal.set.field("tppdm915.da01",tppdm913.da01-da01)
+        dal.set.field("tppdm915.da02",tppdm913.da02-da02)
+        dal.set.field("tppdm915.da03",tppdm913.da03-da03)
+        dal.set.field("tppdm915.da04",tppdm913.da04-da04)
+        dal.set.field("tppdm915.da05",tppdm913.da05-da05)
+        dal.set.field("tppdm915.da06",tppdm913.da06-da06)
+        dal.set.field("tppdm915.da07",tppdm913.da07-da07)
+        dal.set.field("tppdm915.da08",tppdm913.da08-da08)
+        dal.set.field("tppdm915.da09",tppdm913.da09-da09)
+        dal.set.field("tppdm915.da10",tppdm913.da10-da10)
+        dal.set.field("tppdm915.da11",tppdm913.da11-da11)
+        dal.set.field("tppdm915.da12",tppdm913.da12-da12)
+        dal.set.field("tppdm915.da13",tppdm913.da13-da13)
+        dal.set.field("tppdm915.da14",tppdm913.da14-da14)
+        dal.set.field("tppdm915.da15",tppdm913.da15-da15)
+        dal.set.field("tppdm915.da16",tppdm913.da16-da16)
+        dal.set.field("tppdm915.da17",tppdm913.da17-da17)
+        dal.set.field("tppdm915.da18",tppdm913.da18-da18)
+        dal.set.field("tppdm915.da19",tppdm913.da19-da19)
+        dal.set.field("tppdm915.da20",tppdm913.da20-da20)
+        dal.set.field("tppdm915.da21",tppdm913.da21-da21)
+        dal.set.field("tppdm915.da22",tppdm913.da22-da22)
+        dal.set.field("tppdm915.da23",tppdm913.da23-da23)
+        dal.set.field("tppdm915.da24",tppdm913.da24-da24)
+        dal.set.field("tppdm915.da25",tppdm913.da25-da25)
+        dal.set.field("tppdm915.da26",tppdm913.da26-da26)
+        dal.set.field("tppdm915.da27",tppdm913.da27-da27)
+        dal.set.field("tppdm915.da28",tppdm913.da28-da28)
+        dal.set.field("tppdm915.da29",tppdm913.da29-da29)
+        dal.set.field("tppdm915.da30",tppdm913.da30-da30)
+        dal.set.field("tppdm915.da31",tppdm913.da31-da31)
+        dal.set.field("tppdm915.mnth",tppdm913.mnth-mnths)
+        dal.set.field("tppdm915.gz",tppdm913.gz - gz )
+        dal.set.field("tppdm915.jj",tppdm913.jj - jj )
+        dal.set.field("tppdm915.jxj",tppdm913.jxj-jxj)
+        dal.set.field("tppdm915.ylbx",tppdm913.ylbx-ylbx)
+        dal.set.field("tppdm915.yibx",tppdm913.yibx-yibx)
+        dal.set.field("tppdm915.sybx",tppdm913.sybx-sybx)
+        dal.set.field("tppdm915.gjj",tppdm913.gjj-gjj)
+        dal.set.field("tppdm915.shbx",tppdm913.shbx-shbx)
+        dal.set.field("tppdm915.gsbx",tppdm913.gsbx-gsbx)        
+        ret=dal.save.object("tppdm915")
+        if ret<>0 then         
+          ret=dal.get.error.message(err.msg)
+          abort.transaction()
+          return(-1)         
+        endif 
+        
+        |更新考勤表中的研发工时，生产工时
+        | ret=dal.get.object("tppdm913",true,"tppdm913.rzno",tppdm913.rzno,"tppdm913.orno",tppdm913.orno)
+        | dal.set.field("tppdm913.yfgs",gshj) 
+        | dal.set.field("tppdm913.scgs",tppdm913.gshj-gshj) 
+        | ret=dal.save.object("tppdm913")
+        tppdm913.yfgs=gshj
+        tppdm913.scgs=tppdm913.gshj-gshj
+        ret=db.update(ttppdm913,db.retry)
+        break
+      case -1:|总工时小于研发工时
+        ret=mb.import$ (err.msg,"工号："&tppdm913.emno&"研发总工时大于考勤工时")
+        abort.transaction()
+        return(-1)
+        break
+      endcase      
+      
+    endselect 
+
+    if ret<>0 then
+      ret=dal.get.error.message(err.msg)
+      ret=-1
+      abort.transaction()
+    else 
+      |更新锁定与计算标志
+      select tppdm918.* from tppdm918 for update where tppdm918.year=:year and tppdm918.mnth=:mnth
+      selectdo
+        tppdm918.lock=ltoe(1)
+        tppdm918.calc=ltoe(1)
+        tppdm918.clur=logname$
+        tppdm918.cldt=utc.num()
+        ret=db.update(ttppdm918,db.retry)
+      endselect
+      if ret<>0 then
+        ret=dal.get.error.message(err.msg)
+        ret=-1
+        abort.transaction()
+      | else
+      |   ret=0
+      |   commit.transaction()
+      endif
+    endif
+    commit.transaction()
+    ret=0
+    return(ret)
+}
+
+function extern long is.calc(domain tfgld.year year,domain tfgld.prod mnth)
+{
+  long ret
+  ret=0
+  long count 
+  count=0
+  if mnth>=12 then
+    select count(tppdm918.lock):count from tppdm918 where tppdm918.year>:year and tppdm918.lock=:1
+    selectdo
+    endselect
+  else 
+    select count(tppdm918.lock):count from tppdm918 where tppdm918.year=:year and tppdm918.mnth>:mnth and tppdm918.lock=:1
+    selectdo
+    endselect
+  endif
+  if count>0 then
+  endif
+  return(ret)
+  
+}
+
+function extern long unlock.clean(long year,long mnth,ref string err.msg)
+{
+  long ret
+  select tppdm918.* from tppdm918 for update where tppdm918.lock=1 order by tppdm918.year,tppdm918.mnth desc as set with 1 rows
+  selectdo
+    if year<=tppdm918.year then
+      if mnth<> tppdm918.mnth then
+        ret=mb.import$ (err.msg,"只能解锁最终的锁定期间")
+        return(-1)
+      endif
+      
+      tppdm918.lock=ltoe(2)
+      tppdm918.calc=ltoe(2)
+      tppdm918.clur=""
+      tppdm918.emno=""
+      tppdm918.cldt=0
+      tppdm918.lkdt=0
+      ret=db.update(ttppdm918,db.retry)
+
+    else
+      ret=mb.import$ (err.msg,"当前期间未锁定，不能解锁")
+      return(-1)
+    endif
+
+
+
+  selectempty
+    ret=mb.import$ (err.msg,"当前期间未锁定，不能解锁")
+    return(-1)
+  endselect
+  
+  |删除设备工时表中对应期间的数据
+  delete from  tppdm915 where tppdm915.yfno in (select yfno from tppdm914 where tppdm914.year=:year and tppdm914.mnth=:mnth and tppdm914.issc=1 )
+  DELETEERROR    
+    abort.transaction()
+    ret=dal.get.error.message(err.msg)
+    return(-1)
+  enddelete
+  delete from tppdm914  where tppdm914.year=:year and tppdm914.mnth=:mnth and tppdm914.issc=1
+  DELETEERROR 
+    ret=dal.get.error.message(err.msg)   
+    abort.transaction()
+    return(-1) 
+  enddelete
+  | select tppdm913.* from tppdm913 for update  where tppdm913.sgno in (select sgno from tppdm912 where tppdm912.year=:year and tppdm912.mnth=:mnth and tppdm912.issc=2 )
+  | selectdo
+  |   tppdm913.zjdj=0
+  |   tppdm913.zjje=0
+    
+  |   ret=db.update(ttppdm913,db.retry)
+  |   if ret<>0 then
+  |     ret=dal.get.error.message(err.msg) 
+  |     abort.transaction()
+  |     return(-1)
+  |   endif
+  | endselect
+  commit.transaction()
+  return(0)
+
+}
+
+function extern long Lock.data(long year,long mnth,long locked,ref string err.msg)
+{
+  long ret
+  if locked=1 then
+    ret=mb.import$ (err.msg,"当前期间已锁定，不能重复锁定")
+    return(-1)
+  endif
+  long islock
+  islock=0
+  long iscalc
+  iscalc=0  
+  ret=1   
+  if tppdm918.mnth=1 then
+    select tppdm918.year,tppdm918.mnth,tppdm918.lock:islock ,tppdm918.calc:iscalc from tppdm918 where tppdm918.year<:tppdm918.year order by tppdm918.year,tppdm918.mnth desc as set with 1 rows
+    selectdo   
+    selectempty
+      islock=1
+      iscalc=1
+    endselect
+    
+  else
+    select tppdm918.year,tppdm918.mnth,tppdm918.lock:islock ,tppdm918.calc:iscalc  from tppdm918 where tppdm918.year=:tppdm918.year and tppdm918.mnth<:tppdm918.mnth order by tppdm918.year,tppdm918.mnth desc as set with 1 rows
+    selectdo
+    selectempty
+      islock=1
+      iscalc=1
+    endselect
+  endif 
+  if islock=1 then 
+    if iscalc=1 then
+      ret=dal.get.object("tppdm918",true,"tppdm918.year",year,"tppdm918.mnth",mnth)
+      dal.set.field("tppdm918.lock",ltoe(1))
+      dal.set.field("tppdm918.emno",logname$)
+      dal.set.field("tppdm918.lkdt",utc.num())
+      ret=dal.save.object("tppdm918")
+      if ret <>0 then
+        ret=dal.get.error.message(err.msg)
+        abort.transaction()
+        return(-1)
+      endif
+      commit.transaction()
+      return(0)
+    else 
+      ret=mb.import$ (err.msg,"前置期间未计算，不能锁定")
+      return(-1)
+    endif
+  else 
+    ret=mb.import$ (err.msg,"前置期间未锁定，不能锁定")
+    return(-1)
+  endif
+  
+}

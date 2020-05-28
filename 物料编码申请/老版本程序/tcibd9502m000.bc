@@ -1,0 +1,156 @@
+|******************************************************************************
+|* tcibd9502m000  0  VRC 105U 0  dev 
+|* 浗溟浗藱浗瓿浘楓浘殺浗ァ浗贰浗涅浗熱浗里
+|* baan
+|* 19-06-06 [16:17]
+|******************************************************************************
+|* Script Type: 123
+|******************************************************************************
+                                                                                
+|****************************** DECLARATION SECTION ***************************
+declaration:
+  table ttcibd901
+  table ttcibd902 | 浗溟浗藱浗瓿浘楓浘殺浗ァ浗贰浗涅浗熱浗里
+  table ttcmcs006
+  long curr.comp
+  long comp.count
+  extern long state |1新建、2审批、3财务审核、
+
+|****************************** program section ********************************
+before.program:  
+  state=0  
+  import ("state", state)
+  
+before.new.object:
+  tcibd902.pono=get.max(tcibd902.guid)
+  
+before.display.object:
+if trim$(tcibd902.guid)<>"" then
+ select tcibd901.stat from tcibd901 where tcibd901.guid=:tcibd902.guid
+  selectdo
+    if etol(tcibd901.stat)>=2 then |审核后不能再进行添加和删除
+	  disable.commands("add.set","tcibd9502m000",add.set)
+	  disable.commands(mark.delete)
+	  disable.commands(find.data)
+	  disable.commands(def.find)
+	  disable.commands(dupl.occur)
+	  disable.group(3)
+	endif	
+	if state =3 then
+	  enable.group(3)
+	endif 
+  endselect
+endif
+	
+field.tcibd902.comp:
+  selection.filter:
+    query.extend.where.in.zoom("ttaad100.pacc="&quoted.string(curr.pacc$)&
+	" and ttaad100.comp="&str$(get.compnr())&
+	" or ttaad100.comp in (select lcmp from ttaad420 where tabl = 'tcmcs023' and fcmp="
+	&str$(get.compnr())&")" )
+  check.input:
+    select tcmcs006.* from tcmcs006 where tcmcs006._compnr=:tcibd902.comp
+	selectdo
+	tcibd902.uset=tcmcs006.uset	
+	display(tcibd902.uset)
+	endselect
+
+field.tcibd902.citg: |验证物料组
+  before.checks:
+  check.input:
+	select tcmcs023.* from tcmcs023 where tcmcs023._compnr=:tcibd902.comp and tcmcs023.citg=:tcibd902.citg
+	selectdo
+	selectempty
+	  set.input.error("tcibd902uset")       		 
+	endselect
+	
+field.tcibd902.uset: |验证单位集
+  before.checks:
+  check.input:
+    if trim$(tcibd902.uset)<>"" then
+	  select tcmcs006.* from tcmcs006 where tcmcs006._compnr=:tcibd902.comp and tcmcs006.uset=:tcibd902.uset
+	  selectdo
+	  selectempty
+	  	 set.input.error("tcibd902uset")      
+	  endselect
+	endif
+field.tcibd902.gxcode: |验证高新条码
+  before.checks:
+  check.input:
+    if trim$(tcibd902.gxcode)<>"" then
+	  select tccus008.* from tccus008 where tccus008._compnr=:tcibd902.comp and tccus008.gxcode=:tcibd902.gxcode
+	  selectdo
+	  selectempty
+	  	 set.input.error("tcibd902gxcode")      
+	  endselect
+	endif
+field.tcibd902.acun: |验证开票单位
+  before.checks:
+  check.input:
+    if trim$(tcibd902.acun)<>"" then
+	  select tcmcs900.* from tcmcs900 where tcmcs900._compnr=:tcibd902.comp and tcmcs900.cuni=:tcibd902.acun
+	  selectdo
+	  selectempty
+	  	 set.input.error("tcibd902acun")      
+	  endselect
+    endif
+		
+      
+|****************************** group section **********************************
+main.table.io:
+before.write:
+  if get.MainComp()<=0 then
+    skip.io("tcibd902comp1")
+  endif
+  comp.count=get.sameComp()
+  if comp.count >0 then
+    skip.io("tcibd902comp2")
+  endif
+before.rewrite:
+  if get.MainComp()<=0 then 
+    skip.io("tcibd902comp1")
+  endif
+  comp.count=get.sameComp()
+  if comp.count >0 then
+    skip.io("tcibd902comp2")
+  endif
+
+functions:
+function long get.sameComp()
+{
+	comp.count=0
+	select count(guid):comp.count from tcibd902 where tcibd902.guid=:tcibd902.guid 
+	and tcibd902.comp=:tcibd902.comp and tcibd902.pono<>:tcibd902.pono
+	selectdo
+	endselect
+	return(comp.count)
+}
+
+function long get.MainComp()
+{
+	long ret
+	ret=0
+	curr.comp=get.compnr()
+	if curr.comp=tcibd902.comp then
+	  ret=1
+	else
+	  select count(guid):ret from tcibd902 where tcibd902.guid=:tcibd902.guid 
+	  and tcibd902.comp=:curr.comp
+	  selectdo
+	  endselect
+	endif
+	return(ret)
+}
+
+function long get.max(domain tcguid guid)
+{
+	long max.ret
+	select max(pono):max.ret from tcibd902 where tcibd902.guid=:guid
+	selectdo 
+	max.ret=max.ret+1
+	selectempty
+	max.ret=1
+	endselect
+	return(max.ret)
+}
+

@@ -1,0 +1,5204 @@
+|******************************************************************************
+|* tibom010 VRC B61a.
+|* DAL for Production BOMs.
+|* SFC - Manufacturing.
+|* Date September 1998.
+|******************************************************************************
+|* Script Type: Library
+|* Description: This library is DAL for the table 'tibom010 (Production Bill
+|*              of Material)'.
+|******************************************************************************
+|*	Rev.No. 2  tiB60asy24  18 Jan 05 harendse
+|* 800-144955. tibom010.exdt could be made zero, which is not correct.
+|*	Rev.No. 3  tiB60asy24  07 Feb 05 egroten
+|*	Rev.No. 4  tiB60asy24  08 Feb 05 egroten
+|* .
+|*	Rev.No. 2  tiB60asy26  11 Mar 05 pspolmin
+|*  SOL 200368, Paul Spolmink, 2005-03-09
+|* Items with order policy "to order" should be customized automatically when
+|* corresponding parameter in PCS reads Yes.
+|*	Rev.No. 3  tiB60asy26  22 Mar 05 hveijk
+|* SL149757
+|*	Rev.No. 4  tiB60asy26  23 Mar 05 hveijk
+|* SL149757
+|*	Rev.No. 5  tiB60asy26  11 Apr 05 pspolmin
+|* 201158, Paul Spolmink, 2005-04-05 The net quantity is not calculated
+|* correctly when length is set to 0.
+|*	Rev.No. 6  tiB60asy26  14 Apr 05 pspolmin
+|* 201411, Paul Sp浖侖lmink, 14-apr-2005, When a to order item is customized in
+|* Bill of material then Engineering relationships are not copied.
+|*	Rev.No. 7  tiB60asy26  28 Apr 05 pspolmin
+|* Paul Sp浖侖lmink, 28-apr-2005, update.occ() not allowed
+|*	Rev.No. 8  tiB60asy26  23 Jun 05 pspolmin
+|* 202935, Paul Sp浖侖lmink, 23-jun-2005, When a phantom to order item is entered
+|* in the bom of a customized item then all phantom levels and the first non
+|* phantom level below this phantom item have to be exploded and added to the
+|* customized bom.
+|*	Rev.No. 9  tiB60asy26  08 Jul 05 bsp
+|* Product ID object set to  and Product ID source set to 7026
+|*	Rev.No. 10  tiB60asy26  09 Aug 05 fgerrits
+|* Remark 800-147895, Frans Gerritsen, 09/Aug/2005.
+|*	Rev.No. 2  tiB60asy27  25 Aug 05 fgerrits
+|* Cleaned script. Improved dal hook dependency settings.
+|* Frans Gerritsen, 25/Aug/2005.
+|*	Rev.No. 3  tiB60asy27  31 Aug 05 fgerrits
+|* Added function call dal.skip.never.applicable.checks() to
+|* before.open.object.set().
+|* Solution 149757, Frans Gerritsen, 31/Aug/2005.
+|*	Rev.No. 4  tiB60asy27  31 Aug 05 gpeterse
+|* DMS 202453
+|*	Rev.No. 2  tiB60asy28  21 Sep 05 msmits
+|* Sol 205121; The eff. and exp. date are enabled after saving a record, even if
+|* CHM is active.
+|*
+|* SOL 202151, Dries Verhoe, 2005-05-12
+|* The revision-search for ERP-LN is simplified too much and in many situations
+|* the wrong revision is taken/shown.
+|* The separate search for a main-item is not good and always a distinction
+|* must be made between pur/man items, with of without BOM, MBS etc.
+|* (see the matrix of the several options in the code below).
+|*
+|*	Rev.No. 3  tiB60asy28  26 Sep 05 dverhoe
+|* .
+|*
+|* SOL 203506, Bert Zijp, 2005-09-26
+|* adjusted tcibd.dll0205.copy.process to cover tipcs.dll2002.copy.item
+|* functionality. All different copy functions should gradually be replaced by
+|* tcibd.dll0205.copy.process.
+|*	Rev.No. 2  tiB60asy29  28 Sep 05 msmits
+|* Sol. 205121 reworked.
+|*	Rev.No. 3  tiB60asy29  11 Oct 05 msmits
+|* Solution 205614 ported from SP0; When inserting a record in the Bill of
+|* Material (BOM) then the scrapfactor is incorrectly defaulted. The value of
+|* the scrap quantity, as specified in Item Production Data (IPD), is taken.
+|*	Rev.No. 4  tiB60asy29  13 Oct 05 wvdmolen
+|* 800 149606: when alternative materials exists, bom-line cannot be a phantom
+|*
+|* SOL 800-150558, Alok Fadia, 2005-12-23
+|* 800-150558. Alternative Items Planning topic implemented.
+|*
+|* SOL BR1101765, Gerrit Petersen, 2006-02-24
+|*	Rev.No. 8  tiB60asy29  27 Feb 06 gpeterse
+|* WMS integration.
+|*	Rev.No. 2  tiB60asy30  17 Mar 06 fgerrits
+|* Remark 800-151708, Frans Gerritsen, 17/Mar/2006.
+|*	Rev.No. 3  tiB60asy30  03 Apr 06 aputeati
+|* 800/151980, Alina Puteatina, 2006/04/03
+|*	Rev.No. 4  tiB60asy30  14 Apr 06 pspolmin
+|* Paul Sp浖侖lmink, 14-apr-2006, solution 207250 ported( not marked)
+|*	Rev.No. 5  tiB60asy30  24 May 06 aputeati
+|* Added extra checks if Subitem and Main Item are Work in Process.
+|* 800-152273, Alina Puteatina, 24-may-2006.
+|*	Rev.No. 6  tiB60asy30  24 May 06 pspolmin
+|* 210883, Paul Sp浖侖lmink, 24-mai-2006, not possible to update bom by odm
+|*	Rev.No. 7  tiB60asy30  24 May 06 fgerrits
+|* SCH_LN, Frans Gerritsen, 24/May/2006.
+|*	Rev.No. 8  tiB60asy30  02 Jun 06 kshwany
+|* Remark #800-152535
+|* The enabling/disabling of the sessions for alternative items improved. The
+|* command "Alternative Items" is disabled When Lot Selection = Specific
+|* in the tibom1110m000 session as it is not allowed to maintain alternative
+|* items When Lot Selection = Specific.
+|*	Rev.No. 2  tiB60asy32  11 Jul 06 aputeati
+|* Added extra logics for tibom010.stsr 'Supply to Subcontractor'
+|* 800-153633, alina puteatina, 11-july-2006
+|*	Rev.No. 3  tiB60asy32  28 Jul 06 egerrits
+|* Ported from SP2: SOL 211741, Niels Roth, 2006-07-14
+|* For validation of BOM Lines the Project Reference Date is being used.
+|* This solution checks for lines that are not valid and is able to report and
+|* correct these line in order to make them valid for the project.
+|*	Rev.No. 4  tiB60asy32  17 Oct 06 aputeati
+|* Removed environment variable SUBCONTRACTING
+|* 800-152273, alina puteatina, 17-oct-2006
+|*	Rev.No. 5  tiB60asy32  16 Nov 06 fgerrits
+|* Replaced tiedm.dll0001 function with tiint.dlltiedm function.
+|*	Rev.No. 6  tiB60asy32  21 Nov 06 hbiemond
+|* Changes for allowed warehouse types not considered OK.
+|* Have been undone.
+|*	Rev.No. 7  tiB60asy32  30 Nov 06 pspolmin
+|* SOL 216243, Paul Spolmink, 2006-11-30
+|* A neagtive quantity on a phantom bom line results in a fatal error when
+|* processing a sfhopfloor order.
+|*	Rev.No. 2  tiB60asy33  22 Dec 06 pspolmin
+|* 216850, solution ported from SP2
+|*	Rev.No. 2  tiB60asy34  21 Feb 07 aputeati
+|* Added constraints for field tibom010.owns Ownership
+|* #FP4_SUBC_AP, alina puteatina, 21-feb-2007
+|*
+|* SOL FP4_SUBC, Maarten Smits, 2007-03-05
+|* Field Produced WIP renamed into Subassembly; also table fields have to be
+|* renamed. So, new mnenomics.
+|*	Rev.No. 3  tiB60asy35  12 Mar 07 aputeati
+|* Changed message tibom010.k 'Warehouse does not belong to current logistic
+|* company.' --> 'Warehouse %1$s does not belong to current logistic company.'
+|*	Rev.No. 4  tiB60asy35  22 Mar 07 hverheij
+|* TCS Remark 800-156734:
+|* Changed filter and is.valid of tibom010.cwar. Selecting of Consignment
+|* Warehouse (Not Owned) is allowed as well.
+|*	Rev.No. 2  tiB60asy36  19 Apr 07 afadia
+|* FP4_SUBC_2, Alok Fadia, 2007-04-19
+|* Supply to subcontractor ----> Supplied by Subcontractor
+|*
+|* SOL 215034-FP4, Eddy Gerritsen, 2007-05-09
+|* Extended SL 215034/215066 according to changes described in
+|* FD #45704 (Conversion Factors).
+|* Shortly: an Approved flag is added. Modifications are allowed till the
+|* conversion factor is approved. The conversion factor can only be used as soon
+|* as it is approved.
+|*	Rev.No. 3  tiB60asy37  05 Jun 07 egroten
+|* .
+|*	Rev.No. 3  tiB60asy38  17 Jul 07 aputeati
+|* changed comment of message tibom010.v
+|* #FP4_SUBC, alina puteatina, 17-jul-2007
+|*	Rev.No. 4  tiB60asy38  04 Sep 07 hbiemond
+|* Ported from FP1/FP2/FP3:
+|* SOL 221019, Henk Biemond, 2007-06-08
+|* It is not allowed to have a phantom in the Bill Of Material, which has a
+|* negative quantity (ERP-00000-19560).
+|*	Rev.No. 5  tiB60asy38  18 Sep 07 jto
+|* SOL 223843, Jacky To, 2007-09-18
+|* Number of units in tibom010 should be default 1 instead of 0.
+|*
+|* SOL 224180, Waldo Hazeleger, 2007-09-27
+|* When inserting a new line, field 'description' is filled with value of
+|* previous line (ERP-00000-25866)
+|*	Rev.No. 2  tiB60asy40  19 Nov 07 apluijm
+|* 800-160787, Arno Pluijm, 2007-11-14
+|* Estimated Material: Ownership should be disabled when costs are frozen
+|* BOM: Ownership is Not Applicable should not be the case Subcontracting with
+|* Material Flow (subc) is not implemented, should be company owned
+|* Ownership added to Material to Issue as READ ONLY
+|* tibom010.sbsr - Supplied by Subcontractor, not applicable when Subcontracting
+|* with Material Flow (manuf) implemented
+|*	Rev.No. 3  tiB60asy40  22 Nov 07 apluijm
+|* ownership is never applicable when Subc with Material Flow (subc) is No
+|*	Rev.No. 4  tiB60asy40  29 Nov 07 jto
+|* 800-162492, Jacky To, 2007-11-29
+|* Tibom010.sbsr is never applicable when parameter Subc with Material Flow
+|* (manufacture) is on.
+|*	Rev.No. 3  tiB60asy41  25 Jan 08 hbiemond
+|* TCS 800-163209, Henk Biemond, 2008-01-25.
+|* Message argument corrected.
+|*	Rev.No. 2  tiB60asy42  15 Feb 08 harendse
+|* 800-163903. Usage of concept parameter improved.
+|*	Rev.No. 3  tiB60asy42  21 Feb 08 egroten
+|* 800-163554, 2008-02-21, Edwin Grotenhuis, Exclude combination
+|* Phantom/supplied by subcontractor
+|*	Rev.No. 4  tiB60asy42  17 Mar 08 egroten
+|* 800-164713, 2008-03-17, Edwin Grotenhuis, tibom010.altp wrong initialized
+|* when copying.
+|*	Rev.No. 5  tiB60asy42  31 Mar 08 apluijm
+|* SOL 228643, Arno Pluijm, 2008-03-30
+|* In session "Bill of Material" (tibom1110m000) when a material is inserted in
+|* a customized BOM the material is customized as well but the item text is not
+|* copied like in "Copy Standard Product Structure to Customized Item"
+|* (tipcs2230m000)(ERP-00000-35300).
+|*	Rev.No. 6  tiB60asy42  31 Mar 08 apluijm
+|* documentation improved
+|*
+|* SOL 229251, Maarten Smits, 2008-04-25
+|* 229251; Implementation of customer owned price; FD in PD#47385.
+|*	Rev.No. 3  tiB60asy44  06 Jun 08 cschaap
+|* SOL 219379, Balaprasad Thigulla, 2007-04-10
+|* When try to approve (expire) the BOM line through ODM change mangement whose
+|* effective date is maximum system date, System gives an error "Approval for
+|* BOM line BOM, 10 ,1 failed as expiry date is less than effective date".
+|*	Rev.No. 2  tiB60asy45  22 Jul 08 aputeati
+|* #FP5_ASSY, alina puteatina, 22-jul-2008
+|*	Rev.No. 3  tiB60asy45  23 Jul 08 aputeati
+|* #FP5_ASSY, alina puteatina, 23-jul-2008
+|*	Rev.No. 2  tiB60asy48  02 Oct 08 pspolmin
+|* Paul Sp浖侖lmink, 2-oct-2008, SM-02305 copy bom enhancements
+|*	Rev.No. 3  tiB60asy48  04 Dec 08 pspolmin
+|* 800-167684, Paul Sp浖侖lmink, 4-dec-2008, Duplicate not correct for reference
+|* designators; group duplicate not correct for exceptions
+|*	Rev.No. 4  tiB60asy48  06 Apr 09 pspolmin
+|* 800-168310, Paul Sp浖侖lmink, 6-apr-2009, Copy to customized also enabled for
+|* anonymous items
+|*	Rev.No. 5  tiB60asy48  20 Apr 09 cschaap
+|* TCS remark 800-168404.
+|* Sprint Topic 132 + 133, ODM Show Change Order and Hide ODM functionality.
+|*	Rev.No. 2  tiB60asy52  14 Sep 09 cschaap
+|* TCS remark 800-170071, Checks on Std Config and Except Present were blocking.
+|*
+|* SOL 241749, Maarten Smits, 2009-09-29
+|* ERP-00000-66554; Last Allowed Order date in Items - Ordering is updated with
+|* expiry date of BOM-line, irrespective of the existence of the item in other
+|* BOM's.
+|*	Rev.No. 2  tiB60ast6  06 Oct 09 wvdmolen
+|* SOL 241646, When Ebom copy data was generated for a customized end item, and
+|* no relation was present for an E-item component, a relation was created
+|* between the E-item and the standard component. Now, a relation is created
+|* between the E-item and the customized component.
+|* Here, the parameter tipcs000.cbla (Customize BOM line automatically) shouldnt
+|* be used if BOM line is inserted from EDM (ERP-00000-66879)
+|*
+|* SOL FP7_1ITM, Eddy Gerritsen, 2009-12-04
+|* FP7_1ITM: topic 'remove double item codes' implemented.
+|*	Rev.No. 3  tiB60asy54  14 Dec 09 wvdmolen
+|* 800-171954, Introducing fields tcibd001.exin. Serves as a default for
+|* tibom010.exin when adding a new bomline (not while copying or inserting from
+|* EDM)
+|*
+|* Ported solution 243224 for ERP-00000-69419.
+|* 243224, alina puteatina, 08-jan-2010.
+|*
+|*	Rev.No. 6  tiB60asy54  12 Jan 10 wvdmolen
+|* 800-171954, additional, flag copy.activated was not set to false after copy
+|* action
+|*
+|* SOL 245555, Bert Zijp, 2010-03-01
+|* When Infor SCM Scheduler is implemented, then it is not possible to maintain
+|* BOM lines with a Percentage Required (tibom010.perq) of 0.
+|*
+|* SOL FP7_T221, Maarten Smits, 2010-03-08
+|* FP7_T221; Return to using standard item in BOM. Related to incident 273607.
+|* Via solution 245548 backported to FP3 - FP6.
+|*
+|*	Rev.No. 9  tiB60asy54  16 Mar 10 cschaap
+|* Sprint Topic 176: Procurement of Configured Products - Master Data.
+|* Marked with TCS remark 800-172324.
+|*
+|*	Rev.No. 2  tiB60asy56  04 Aug 10 akamstee
+|* FP7_CONF: Configured items in BOM.
+|*
+|* 800-172375, Paul Sp浖侖lmink, 6-aug-2010, company owned also allowed when
+|* inherit ownership from main item.
+|*	Rev.No. 4  tiB60asy56  18 Aug 10 wvdmolen
+|* 800-172856, Activated filter on tibom010.mitm
+|*
+|* SOL 248772, Maarten Smits, 2010-08-23
+|* DEF279860; when a bom line is copied, also the fields Eff. and Exp. Change
+|* Order are copied. This is incorrect.
+|*
+|* SOL 250510, Eddy Gerritsen, Baan AD DSC, 2010-10-08
+|* Ported from FP3/5/6: Using the option Group/Duplicate will copy the original
+|* text numbers iso creating new text numbers.
+|*
+|*	Rev.No. 3  tiB60asy59  08 Nov 10 bzijp
+|* SOL 251215, Bert Zijp, 2010-11-04
+|* When expiring a BOM line via a Change Order and when the effective date of
+|* that specific BOM line is in the future, then the message: "Approval for BOM
+|* line %1$s, %2$d, %3$d failed as expiry date is less than effective date." is
+|* launched.
+|*	Rev.No. 2  tiB60asy60  07 Dec 10 pspolmin
+|* FP8_T261, Paul Sp浖侖lmink, 7-dec-2010, link with edm only when set by edm
+|*
+|* SOL 800-176593, Paul Spolmink, 2011-02-02
+|* Performance improvement using effective item type is present(tcibd001.efpr)
+|*	Rev.No. 4  tiB60asy60  25 Mar 11 gderjav
+|* FP8_EFFD: effectivity/expiry dates will include a Time part.
+|*
+|* SOL 169264, Eddy Gerritsen, 2011-04-27
+|* Enhancement Request Infor365-169264.
+|* Net change flag of EP will be set for component's parent item, and its
+|* (non-phantom) parents or top-parents. And also for phantom components of the
+|* item.
+|*	Rev.No. 6  tiB60asy60  31 May 11 msmits
+|* 800-177482; subassemblies filtered out.
+|*	Rev.No. 7  tiB60asy60  21 Jun 11 gderjav
+|* SOL 1024157 is ported from FP7, Gennadi Derjavets
+|* Net quantity in BOM is nullified for changed component with inventory unit of
+|* type Length.
+|* (Infor365 316280).
+|*	Rev.No. 8  tiB60asy60  06 Jul 11 gderjav
+|* LND-1685: fields dependencies have been generated.
+|*
+|* SOL 1058454, Richard Buitenhuis, 2011-10-04
+|* When an inctive Business Partner is present it is not possible to generate
+|* the porject structure. (Infor365 - DF 327933)
+|*
+|* SOL 1114729, Paul Spolmink, 2012-01-16
+|* When an item is unflagged for revision controlled and a revision is already
+|* present then processing of the order is blocked(DF339079).
+|*	Rev.No. 4  tiB60asy61  16 Mar 12 hbiemond
+|* PLP_PJPG_HB, Henk Biemond, 2012-03-16.
+|* Field 'Supplied by Subcontractor' is also used for subcontracting without
+|* material flow.
+|*	Rev.No. 2  tiB60asy62  27 Mar 12 gderjav
+|* 800-182197: mandatory project pegged item cannot be used as component of
+|* customized or not pegged main item.
+|*
+|* SOL 1149833, Bert Zijp, 2012-06-12
+|* When archiving a project the table Simulated Purchase Prices (ticpr170) is
+|* not archived and the process stops with message "Project has already been
+|* completed" (InforXtreme - 355782)
+|*	Rev.No. 3  tiB60asy65  15 Jun 12 gderjav
+|* LND-4097: property hooks for the field tibom010.hppr are added.
+|*
+|* SOL LND-4095, John van Dijk, 2012-06-27
+|* Topic: VMI - Copy phantom routing for project structure.
+|*
+|* SOL LND-4707, John van Dijk, 2012-08-28
+|* A&D Project Planning Phase 3 (Customer Furnished Material) - SFC/CST, Part 3
+|*	Rev.No. 2  tiB60asy67  24 Oct 12 jvdijk
+|* Added publish BillOfResourcesBOD logic.
+|*	Rev.No. 3  tiB60asy67  25 Oct 12 jvdijk
+|* ..
+|*	Rev.No. 4  tiB60asy67  26 Oct 12 jvdijk
+|* ..
+|*	Rev.No. 2  tiB60asy68  05 Nov 12 hbiemond
+|* TCS 800-187561, Henk Biemond, 2012-11-05.
+|* Fields in BOM for customer furnished materials should be invisible when
+|* demand pegging is not implemented.
+|*	Rev.No. 2  tiB60asy69  14 Nov 12 jvdijk
+|* Added publish BillOfResourcesBOD.
+|*
+|* SOL 1352964, Henk Arendse, 2012-11-14
+|* When adding a new sub item to a BOM main item, cp is called to update the net
+|* change flag. This can also lead to cycle detection, but the detected cycle is
+|* not reported to the user.
+|*	Rev.No. 2  tiB60asy70  04 Dec 12 obakker
+|* 800-188057: Remove obsolete option 'Inherit Using Terms and Conditions' for
+|* Demand Peg Propagation setting in BOM.
+|*	Rev.No. 3  tiB60asy70  04 Dec 12 obakker
+|* 800-188057: Remove obsolete option 'Inherit Using Terms and Conditions' for
+|* Demand Peg Propagation setting in BOM.
+|*
+|* SOL 1342940, Bert Zijp, 2012-12-05
+|* Net Quantity is not recalculated autmatically (anymore) when changing length
+|*  or width. (InforXtreme - 374554)
+|*
+|* SOL 1364009, Bert Zijp, 2012-12-20
+|* When item is a floor stock item (whwmd400.pics), then "Supplied by
+|* Subcontractor" is incorrectly defaulted to "Yes". (InforXtreme-383580)
+|*
+|* SOL 1389596, Bert Zijp, 2013-06-19
+|* When Infor SCM Scheduler is implemented, then it is not possible to insert a
+|* production order (ticst001.preq = 0 not allowed) (InforXtreme-396472)
+|*	Rev.No. 2  tiB60asy77  08 Aug 13 pspolmin
+|* 1423773, Paul Spolmink, 2013-08-02, When insering a new bom line sequence and
+|* also a new bom line then expiring an older sequence number and then remove
+|* the new bom line a fatal error on tibom050 comes up.
+|*
+|* SOL LND-7699, John van Dijk, 2013-10-02
+|* Item Configuration on Contract Deliverables - PLP.
+|*
+|* SOL 1465701, Bert Zijp, 2014-01-21
+|* When zooming on the project field or item field, then closed/archived
+|* projects are not shown. (InforXtreme-434263)
+|*	Rev.No. 5  tiB60asy77  12 Mar 14 harendse
+|* LND-9664. The Is/Contains CFM fields in BOM must also be enabled when Demand
+|* Pegging is not implemented and when Propagate Demand Peg = No
+|*	Rev.No. 6  tiB60asy77  25 Mar 14 rkamerli
+|* 800-194964.
+|* Inserted a new field: Inherit Demand Peg (tibom010.idpg).
+|* This field will replace the field Demand Peg Propagation (tibom010.hppr).
+|* The Demand Peg Propagation field will be declared obsolete.
+|*	Rev.No. 7  tiB60asy77  28 Mar 14 rkamerli
+|* 800-194964.
+|* Inserted a new field: Inherit Demand Peg (tibom010.idpg).
+|* This field replaces the field Demand Peg Propagation (tibom010.hppr).
+|* The Demand Peg Propagation field is declared obsolete.
+|*
+|* SOL LND-9378, Henk Arendse, 2014-05-02
+|* Generate PCS structure for PCM variants
+|*	Rev.No. 2  tiB60asy79  23 Jun 14 obakker
+|* SOL 1495951: BOM tree for customized phantom item copied from wrong standard
+|* item. (InforXtreme 450124)
+|*	Rev.No. 2  tiB60asy80  10 Jul 14 pspolmin
+|* 1501670, Paul Spolmink, 2014-06-24, When finalizing a new revision then also
+|* a routing is created for an item that doesn't have a routing.
+|*	Rev.No. 3  tiB60asy80  11 Jul 14 bzijp
+|* SOL 1517164, Bert Zijp, 2014-07-11
+|* Net change flag in cprpd100 and tiipd001 not updated when changing the
+|* percentage required in the BOM (InforXtreme-460367)
+|*	Rev.No. 2  tiB6111sy01  06 Jan 15 svries
+|* JIRA Task: lnd2-521.
+|* Implementation of the Production Model
+|*	Rev.No. 3  tiB6111sy01  04 Feb 15 jvdijk
+|* ..
+|*	Rev.No. 4  tiB6111sy01  05 Feb 15 jvdijk
+|* solution 1590774.
+|*
+|* SOL LND2-937, Henk Arendse, 2015-02-05
+|* Date effective item source definition functions
+|*	Rev.No. 8  tiB6111sy01  24 Feb 15 harendse
+|* Rework
+|*	Rev.No. 9  tiB6111sy01  27 Feb 15 harendse
+|* Rework
+|*	Rev.No. 2  tiB6112sy01  12 Mar 15 pspolmin
+|* LND2-3406, Paul Spolmink, 10-mar-2014, Repetitive items cannot be customer
+|* furnished in bill of material
+|*
+|* SOL 1602568, Wim van der Molen, 2015-03-23
+|* When a Phantom component is added using EDM, the flag Supplied by
+|* Subcontractor wasn't reset. (infor Xtreme Defect 494251)
+|*	Rev.No. 4  tiB6112sy01  20 Apr 15 bzijp
+|* SOL 1608903, Bert Zijp, 2015-04-16
+|* It is possible to delete Change Order controlled BOM Lines. (InforXtreme -
+|* 497280)
+|*	Rev.No. 5  tiB6112sy01  01 Jun 15 inforln
+|*	Rev.No. 2  tiB6113sy01  24 Jul 15 hbiemond
+|* FP13, Henk Biemond, 2015-07-24.
+|* Consignment (not owned) warehouse not allowed as receiving warehouse.
+|*	Rev.No. 3  tiB6113sy01  04 Aug 15 svschouw
+|* KB1636567. The 'Specify WH in BOM' flag is set to 'no', but still the WH gets
+|* filled in the BOM. See defect 510147.
+|*	Rev.No. 2  tiB6114sy01  23 Sep 15 bzijp
+|* SOL 1653561, Bert Zijp, 2015-09-17
+|* When an item is change-management-controlled, deactivating BOM lines should
+|* be handled by setting them to expired by means of change orders. It is
+|* possible however to delete a BOM Line manually. (InforXtreme-518229)
+|*	Rev.No. 3  tiB6114sy01  24 Nov 15 bzijp
+|*  SOL 1672808, Bert Zijp, 2015-11-24
+|*  product variant ref argument in tcibd.dll0205.copy.process
+|*
+|* SOL 1672403, Bert Zijp, 2015-11-26
+|* "Project <> must have status Free, Simulated, or Active." when archiving
+|* project. BOM delete triggers update of tiipd001.nsfc. tiipd001 checks if
+|* (customized)item modification is allowed, causing dalhookerror. (InforXtreme
+|* -527236)
+|*	Rev.No. 3  tiB6115sy01  14 Dec 15 bzijp
+|* SOL 1675573, Bert Zijp, 2015-12-09
+|* Incorrect BOM copied to phantom customized item (InforXtreme-528958)
+|*	Rev.No. 4  tiB6115sy01  26 Jan 16 wvdmolen
+|* Apply item authorization settings
+|*	Rev.No. 5  tiB6115sy01  09 Feb 16 pspolmin
+|* LND2-9836, Paul Spolmink, 9-feb-2016, item type tool added
+|*	Rev.No. 6  tiB6115sy01  12 Feb 16 pspolmin
+|* LND2-9836, Paul Spolmink, 12-feb-2016, Rework after review
+|*	Rev.No. 7  tiB6115sy01  12 Feb 16 svschouw
+|* LND2-10312. Screen redesign of the Bill of Material session. See CD #53559,
+|* paragraph 3.3.3
+|*	Rev.No. 2  tiB6116sy01  02 Mar 16 apluijm
+|* 800-208256 No message that you are not authorized for this item in this
+|* session also valid hooks domain tcbool -> boolean
+|*	Rev.No. 3  tiB6116sy01  14 Mar 16 mbarteli
+|* lnd2-10125: Tool Item - Phase out old type
+|*	Rev.No. 4  tiB6116sy01  30 Mar 16 hbiemond
+|* LND2-11185, Henk Biemond, 2016-03-30.
+|* UTC40 issue solved.
+|*	Rev.No. 5  tiB6116sy01  31 Mar 16 pspolmin
+|* LND2-10608, Paul Spolmink, 31-mar-2016, warehouse authorization added
+|*
+|* SOL 1873648, Paul Spolmink, 2017-01-17
+|* When an effectivity unit is entered then only operations valid for this
+|* effectivity unit should be copied. Exceptions should not be copied in that
+|* case(DF 573587)
+|*
+|* SOL 1876615, Sebastiaan van Schouwen, 2017-01-26
+|* KB1876615. Error during generate PCS project structure - cannot copy item -
+|* Expiry Date has an invalid value in BP data. Skip inactive BP to generate
+|* project structure. See defect 575327.
+|*
+|* SOL 1984490, Arno Pluijm, 2018-04-17
+|* Copy of BOM not possible in case of flag "allow multiple items" (DF637854)
+|*
+|* SOL 1993824, Sicco de Vries, 2018-06-01
+|* Zoom on field tibom010.cwar fails when security is enabled.
+|******************************************************************************
+#ident "@(#)tibom010  tiB51asy08  nawaab  Rev.No. 5  16 Dec 98  achandra"
+#ident "@(#)tibom010  tiB51asy09  nawaab  Rev.No. 5  05 Jan 99  bbabu"
+#ident "@(#)tibom010  tiB51asy10  nawaab  Rev.No. 5  12 Jan 99  bbabu"
+#ident "@(#)tibom010  tiB51asy11  nawaab  Rev.No. 3  25 Jan 99  achandra"
+#ident "@(#)tibom010  tiB51asy13  nawaab  Rev.No. 2  03 Feb 99  bbabu"
+#ident "@(#)tibom010  tiB51asy15  nawaab  Rev.No. 4  23 Feb 99  psrikant"
+#ident "@(#)tibom010  tiB51asy16  nawaab  Rev.No. 2  25 Feb 99  psrikant"
+#ident "@(#)tibom010  tiB51asy17  nawaab  Rev.No. 4  09 Mar 99  prao"
+#ident "@(#)tibom010  tiB51asy18  nawaab  Rev.No. 2  11 Mar 99  prao"
+#ident "@(#)tibom010  tiB52asy01  nawaab  Rev.No. 7  26 Aug 99  psrikant"
+#ident "@(#)tibom010  tiB60asy01  nawaab  Rev.No. 2  24 Nov 99  bkumar"
+#ident "@(#)tibom010  tiB60asy02  nawaab  Rev.No. 9  09 Feb 00  hrao"
+#ident "@(#)tibom010  tiB60asy03  nawaab  Rev.No. 12  29 Mar 00  pmaruthi"
+#ident "@(#)tibom010  tiB60asy05  nawaab  Rev.No. 4  17 Apr 00  hrao"
+#ident "@(#)tibom010  tiB60asy06  nawaab  Rev.No. 5  06 Jun 00  sgupta"
+#ident "@(#)tibom010  tiB52asy07  nawaab  Rev.No. 2  08 Jun 00  sgupta"
+#ident "@(#)tibom010  tiB52asy08  nawaab  Rev.No. 3  22 Jun 00  hrao"
+#ident "@(#)tibom010  tiB52asy09  nawaab  Rev.No. 5  18 Jul 00  sgupta"
+#ident "@(#)tibom010  tiB52asy10  nawaab  Rev.No. 5  04 Aug 00  bkumar"
+#ident "@(#)tibom010  tiB52asy11  nawaab  Rev.No. 2  18 Aug 00  kfrankli"
+#ident "@(#)tibom010  tiB52asy12  nawaab  Rev.No. 3  11 Sep 00  kfrankli"
+#ident "@(#)tibom010  tiB52asy13  nawaab  Rev.No. 5  12 Oct 00  bkumar"
+#ident "@(#)tibom010  tiB52asy14  runner  Rev.No. 1  24 Oct 00  bsp"
+#ident "@(#)tibom010  tiB52asy16  runner  Rev.No. 2  26 Feb 01  pspolmin"
+#ident "@(#)tibom010  tiB52asy17  runner  Rev.No. 2  30 May 01  pspolmin"
+#ident "@(#)tibom010  tiB52asy18  runner  Rev.No. 4  30 Jul 01  pspolmin"
+#ident "@(#)tibom010  tiB52asy19  runner  Rev.No. 4  30 Aug 01  wblijlev"
+#ident "@(#)tibom010  tiB52asy20  runner  Rev.No. 2  25 Sep 01  pspolmin"
+#ident "@(#)tibom010  tiB52asy21  runner  Rev.No. 5  20 Dec 01  pspolmin"
+#ident "@(#)tibom010  tiB52asy22  runner  Rev.No. 3  27 Feb 02  pspolmin"
+#ident "@(#)tibom010  tiB52bsy01  runner  Rev.No. 4  13 Mar 02  pspolmin"
+#ident "@(#)tibom010  tiB52bsy02  runner  Rev.No. 3  26 Apr 02  giyer"
+#ident "@(#)tibom010  tiB52bsy03  runner  Rev.No. 2  18 Jun 02  pspolmin"
+#ident "@(#)tibom010  tiB52bsy04  runner  Rev.No. 6  05 Nov 02  pspolmin"
+#ident "@(#)tibom010  tiB60asy05  runner  Rev.No. 17  10 Feb 03  pspolmin"
+#ident "@(#)tibom010  tiB60asy06  runner  Rev.No. 3  14 Feb 03  pspolmin"
+#ident "@(#)tibom010  tiB60asy07  runner  Rev.No. 2  05 Mar 03  pspolmin"
+#ident "@(#)tibom010  tiB60asy08  sprinter  Rev.No. 4  20 May 03  mvveldhu"
+#ident "@(#)tibom010  tiB60asy09  sprinter  Rev.No. 2  27 May 03  sdbruin"
+#ident "@(#)tibom010  tiB60asy10  sprinter  Rev.No. 3  27 Jun 03  sdbruin"
+#ident "@(#)tibom010  tiB60asy11  sprinter  Rev.No. 2  07 Jul 03  avdhoek"
+#ident "@(#)tibom010  tiB60asy12  sprinter  Rev.No. 2  15 Jul 03  apluijm"
+#ident "@(#)tibom010  tiB60asy14  sprinter  Rev.No. 2  01 Sep 03  pspolmin"
+#ident "@(#)tibom010  tiB60asy15  sprinter  Rev.No. 4  24 Nov 03  kriezeb"
+#ident "@(#)tibom010  tiB60asy20  sprinter  Rev.No. 3  08 Mar 04  fgerrits"
+#ident "@(#)tibom010  tiB60asy21  sprinter  Rev.No. 3  05 Apr 04  fgerrits"
+#ident "@(#)tibom010  tiB60asy23  sprinter  Rev.No. 3  13 Dec 04  egroten"
+#ident "@(#)tibom010  tiB60asy24  sprinter  Rev.No. 4  08 Feb 05  egroten"
+#ident "@(#)tibom010  tiB60asy26  sprinter  Rev.No. 10  09 Aug 05  fgerrits"
+#ident "@(#)tibom010  tiB60asy27  sprinter  Rev.No. 4  31 Aug 05  gpeterse"
+#ident "@(#)tibom010  tiB60asy28  sprinter  Rev.No. 4  26 Sep 05  bzijp"
+#ident "@(#) SOL 202151, 2005-05-12, B61M_a"
+#ident "@(#) SOL 203506, 2005-09-26, B60_a_sy28"
+#ident "@(#)tibom010  tiB60asy29  sprinter  Rev.No. 8  24 Feb 06  gpeterse"
+#ident "@(#) SOL 800-150558, 2005-12-23, B60_a_sy29"
+#ident "@(#)tibom010  tiB60asy30  sprinter  Rev.No. 8  02 Jun 06  kshwany"
+#ident "@(#)tibom010  tiB60asy32  sprinter  Rev.No. 7  30 Nov 06  pspolmin"
+#ident "@(#)tibom010  tiB60asy33  sprinter  Rev.No. 2  22 Dec 06  pspolmin"
+#ident "@(#)tibom010  tiB60asy34  sprinter  Rev.No. 2  21 Feb 07  aputeati"
+#ident "@(#)tibom010  tiB60asy35  sprinter  Rev.No. 4  22 Mar 07  hverheij"
+#ident "@(#) SOL FP4_SUBC, 2007-03-05, B60_a_sy35"
+#ident "@(#)tibom010  tiB60asy36  nlbaudv1  Rev.No. 2  12 Apr 07  afadia"
+#ident "@(#)tibom010  tiB60asy38  nlbaudv1  Rev.No. 5  14 Sep 07  jto"
+#ident "@(#)tibom010  tiB60asy39  nlbaudv1  Rev.No. 2  27 Sep 07  whazeleg"
+#ident "@(#) SOL 224180, 2007-09-27, B60_a_sy39"
+#ident "@(#)tibom010  tiB60asy40  nlbaudv1  Rev.No. 4  29 Nov 07  jto"
+#ident "@(#)tibom010  tiB60asy41  nlbaudv1  Rev.No. 3  25 Jan 08  hbiemond"
+#ident "@(#) SOL IFMI, 2008-01-15, B60_a_sy41"
+#ident "@(#)tibom010  tiB60asy42  nlbaudv1  Rev.No. 6  31 Mar 08  apluijm"
+#ident "@(#)tibom010  tiB60asy44  nlbaudv1  Rev.No. 3  06 Jun 08  cschaap"
+#ident "@(#) SOL 229251, 2008-04-25, B60_a_sy44"
+#ident "@(#)tibom010  tiB60asy45  nlbaudv1  Rev.No. 3  23 Jul 08  aputeati"
+#ident "@(#)tibom010  tiB60asy48  nlbaudv1  Rev.No. 5  17 Apr 09  cschaap"
+#ident "@(#)tibom010  tiB60asy52  nlbaudv1  Rev.No. 2  14 Sep 09  cschaap"
+#ident "@(#)tibom010  tiB60asy53  nlbaudv1  Rev.No. 2  29 Sep 09  msmits"
+#ident "@(#) SOL 241749, 2009-09-29, B60_a_sy53"
+#ident "@(#)tibom010  tiB60ast6  nlbaudv1  Rev.No. 2  06 Oct 09  wvdmolen"
+#ident "@(#)tibom010  tiB60asy56  nlbaudv1  Rev.No. 5  23 Aug 10  msmits"
+#ident "@(#) SOL 248772, 2010-08-23, B60_a_sy56"
+#ident "@(#)tibom010  tiB60ast7  nlbaudv1  Rev.No. 2  08 Oct 10  egerrits"
+#ident "@(#)tibom010  tiB60asy59  nlbaudv1  Rev.No. 3  08 Nov 10  bzijp"
+#ident "@(#)tibom010  tiB60asy60  nlbaudv1  Rev.No. 8  06 Jul 11  gderjav"
+#ident "@(#) SOL 800-176593, 2011-02-02, B60_a_sy60"
+#ident "@(#) SOL 169264, 2011-04-15, B60_a_sy60"
+#ident "@(#)tibom010  tiB60asy61  nlbaudv1  Rev.No. 2  04 Oct 11  rbuitenh"
+#ident "@(#) SOL 1058454, 2011-10-04, B60_a_sy61"
+#ident "@(#)tibom010  tiB60asy61  nlbaudv3  Rev.No. 4  16 Mar 12  hbiemond"
+#ident "@(#)tibom010  tiB60asy62  nlbaudv3  Rev.No. 2  27 Mar 12  gderjav"
+#ident "@(#)tibom010  tiB60asy65  nlbaudv3  Rev.No. 4  27 Jun 12  jdijk"
+#ident "@(#) SOL 1149833, 2012-06-12, B60_a_sy65"
+#ident "@(#) SOL LND-4095, 2012-06-27, B60_a_sy65"
+#ident "@(#)tibom010  tiB60asy66  nlbaudv3  Rev.No. 6  14 Sep 12  jdijk"
+#ident "@(#) SOL LND-4707, 2012-08-28, B60_a_sy66"
+#ident "@(#)tibom010  tiB60asy67  nlbaudv3  Rev.No. 4  26 Oct 12  jvdijk"
+#ident "@(#)tibom010  tiB60asy69  nlbaudv3  Rev.No. 3  14 Nov 12  harendse"
+#ident "@(#) SOL 1352964, 2012-11-14, B60_a_sy69"
+#ident "@(#)tibom010  tiB60asy70  nlbaudv3  Rev.No. 4  05 Dec 12  bzijp"
+#ident "@(#) SOL 1342940, 2012-12-05, B60_a_sy70"
+#ident "@(#)tibom010  tiB60asy71  nlbaudv3  Rev.No. 3  20 Dec 12  bzijp"
+#ident "@(#) SOL 1364009, 2012-12-20, B60_a_sy71"
+#ident "@(#)tibom010  tiB60asy75  nlbaudv3  Rev.No. 2  19 Jun 13  bzijp"
+#ident "@(#) SOL 1389596, 2013-06-19, B60_a_sy75"
+#ident "@(#)tibom010  tiB60asy77  nlbaudv3  Rev.No. 8  02 May 14  harendse"
+#ident "@(#) SOL LND-7699, 2013-10-02, B60_a_sy77"
+#ident "@(#) SOL 1465701, 2014-01-21, B60_a_sy77"
+#ident "@(#) SOL LND-9378, 2014-05-02, B60_a_sy77"
+#ident "@(#)tibom010  tiB60asy78  nlbaudv3  Rev.No. 2  07 May 14  harendse"
+#ident "@(#)tibom010  tiB60asy79  NLBAWAPPSDEV1  Rev.No. 2  23 Jun 14  obakker"
+#ident "@(#)tibom010  tiB60asy80  NLBAWAPPSDEV1  Rev.No. 3  11 Jul 14  bzijp"
+#ident "@(#)tibom010  tiB6111sy01  NLBAWAPPSDEV1  Rev.No. 9  27 Feb 15  harendse"
+#ident "@(#) SOL LND2-937, 2015-02-05, B61_11_sy01"
+#ident "@(#)tibom010  tiB6112sy01  NLBAWAPPSDEV1  Rev.No. 4  20 Apr 15  bzijp"
+#ident "@(#) SOL 1602568, 2015-03-23, B61_12_sy01"
+#ident "@(#)tibom010  tiB6113sy01  NLBAWAPPSDEV1  Rev.No. 3  04 Aug 15  svschouw"
+#ident "@(#)tibom010  tiB6114sy01  NLBAWAPPSDEV1  Rev.No. 3  24 Nov 15  bzijp"
+#ident "@(#)tibom010  tiB6115sy01  NLBAWAPPSDEV1  Rev.No. 7  12 Feb 16  svschouw"
+#ident "@(#) SOL 1672403, 2015-11-26, B61_15_sy01"
+#ident "@(#)tibom010  tiB6116sy01  NLBAWAPPSDEV1  Rev.No. 5  31 Mar 16  pspolmin"
+#ident "@(#)tibom010  tiB61M16  nlbalappsmnt1  Rev.No. 5  01 Jun 18  svries"
+#ident "@(#) SOL 1873648, 2017-01-17, B61M_a6"
+#ident "@(#) SOL 1876615, 2017-01-26, B61M_a9"
+#ident "@(#) SOL 1984490, 2018-04-17, B61M_16"
+#ident "@(#) SOL 1993824, 2018-06-01, B61M_16"
+	|**** Include Section *************************************************
+	#include <bic_dal2>	|* DAL2 Support.
+	#include <bic_text>	|* Text Support.
+	#include "itcmcs0012"	|* Compare Double - Macros
+	#include "itcmcs2000"	|* DAL(-GUI) Support Defines
+	#include "itcbod0004"	|* General function		|#1590774.n
+
+	|**** Table Declaration ***********************************************
+	table	ttccom000	|* Implemented Software Components (Companies)
+	table	ttcmcs001	|* Units
+	table	ttcmcs003	|* Warehouses
+	table	ttcibd001	|* Items - General
+	table	ttcibd200	|* Items - Ordering
+	table	ttcuef002	|* Effectivity Number
+	table	ttibom000	|* BOM Parameters
+	table	ttibom010	|* Bill of Material
+	table	ttibom040	|* Material-Routing Relationships
+	table	tticpr007	|* Item Costing Data
+	table	ttiedm000	|* EDM Parameters
+	table	ttiedm100	|* Engineering Item - Revision
+	table	ttiipd001	|* Item Production Data
+	table	ttipcs000	|* PCS Parameters
+	table	ttipcs020	|* General Project Data
+	table	ttipcs025	|* Project Parts
+	table	ttipcs030	|* Project Details
+	table	ttirou101	|* Routing Codes by Item
+	table	ttirou103	|* Phantom Routing Relationships
+
+	|**** Script Variables ************************************************
+	long		ret
+	long		dummy.ret.val		|* Dummy Return Value.
+	extern	long	end.pos
+	extern	long	start.pos
+
+|****************************************************************************
+|*	Variables declared for comparision report
+|****************************************************************************
+	domain 	tccwar		cwar.prev	|#118493.n
+
+	domain	tcuef.obje  source.key      | source key     |#tunnel_project.sn
+	domain	tcuef.obje  target.key      | target key
+	domain	tcuef.obje  delete.key      | delete key     |#tunnel_project.en
+
+	domain	tcmcs.st15m text.keyw1	   | text key word 1
+	domain	tcmcs.st15m text.keyw2	   | text key word 2
+	domain	tcmcs.st15m text.keyw3	   | text key word 3
+	domain	tcmcs.st15m text.keyw4	   | text key word 4
+	domain	tcpono      copied.pono	   | hold pos. nr when rec. is copied
+	domain	tcpono      copied.seqn	   | hold sequence nr when rec is
+					   | copied
+	domain	tcitem      previous.mitm   | save main item copied globally
+								|#LND-4095.sn
+	domain	tcitem      previous.sitm   | save sub item copied globally
+								|#LND-4095.en
+	domain	tcconv      buom.conv	   | Conversion factor of BOM unit
+								|#202935.sn
+	boolean		phantom.bom.customized |* flag to indicate if the
+					       |* phantom flag is set.
+	domain	tcitem	old.sub.item				|#202935.en
+	boolean	update.by.odm			|* ODM updates bom |#210883.n
+
+	domain	tiutcs	indt.prev 	   | previous record values(start)
+	domain	tiutcs	exdt.prev
+	domain	tiqbm2  qana.prev
+	domain	tcscpf  scpf.prev
+	domain	tcscpq  scpq.prev
+	domain	tcyesno ltom.prev
+|	domain	tcltmo  ltov.prev				|#CR19.o
+	domain	tcwttm	ltov.prev				|#CR19.sn
+	domain	tctope	ltou.prev				|#CR19.en
+	domain	tcitem  sitm.prev
+	domain	tcyldp  yldo.prev
+	domain	tcscpq  scro.prev
+	domain	tcyesno cpha.prev
+	domain	tcyesno	phst.prev
+	domain	tcyesno unef.prev
+	domain	tcyesno stcf.prev
+	domain	tcopno	opno.prev	 			|#200-29666.n
+	domain	tcperc	preq.prev				|#1517164.n
+							|#gem2-refdes.so
+|	domain	tilcid	lcid.prev | previous record values (end) |#BR1-100625
+							|#gem2-refdes.eo
+|	domain  tckitm	 o.eff.item.type  | Effective item type	       |#DAL2.o
+	domain  tiutcd	 ref.date	  |#100226.n
+								       |#DAL2.sn
+	domain  tckitm		g.mitm.kitm	  |Kind of item main item
+	domain	tcyesno		g.mitm.efpr	|eff item type	|#800-176593.n
+								|#205121.sn
+	domain	tcyesno		g.mitm.chma
+|	domain	tccpva		g.mitm.cpva			|#FP7_T221.o
+	extern	domain	tccpva	bom010.mitm.cpva		|#FP7_T221.n
+	domain	tcyesno		g.mitm.edco
+	domain	tcyesno		g.mitm.eitm
+	domain	tcitmt		g.mitm.itmt
+	domain	tcyesno		g.mitm.mcoa
+	domain	tcibd.umer	g.mitm.umer
+	domain	tcyesno		g.mitm.cnfg			|#LND2-937.n
+	domain	tccprj		g.mitm.cprj			|#211741.n
+	domain	tcyesno		g.mitm.stoi
+	domain	tiqbm1		g.mitm.unom
+								|#205121.en
+								|#800-152273.sn
+	domain	tcyesno		g.mitm.sayn	  |Main Item Subassembly
+								|#800-152273.en
+|						|#FP5_ASSY.sn	|#FP7_1ITM.so
+|	domain	tcosys		g.mitm.osys	  |Main item Order system
+|						|#FP5_ASSY.en	|#FP7_1ITM.eo
+								|#FP7_1ITM.sn
+	domain	tcsrce		g.mitm.srce	  | Default Supply Source
+								|#FP7_1ITM.en
+	domain	tcibd.umer	g.sitm.umer	  |update method e-item
+	domain	tcyesno		g.sitm.ltct	  |lot controlled
+	domain	tctccu		g.cuni.tccu	  |physical quantity unit
+	domain	tcitmt		g.sitm.itmt	  |item type
+	domain  tckitm		g.sitm.kitm	  |kind of item
+	domain	tcyesno		g.sitm.cnfg	  |configurable  |#LND2-937.n
+	domain	tcyesno		g.sitm.efpr	  |eff item type |#176593.n
+	domain	tccitg		g.sitm.citg	  |Item group
+							|#gem2-refdes.so
+|	domain  tcyesno		g.sitm.agrd	  |aggregate on ref. designator
+							|#gem2-refdes.eo
+	domain	tcyesno		g.sitm.cpha	  |phantom
+	domain  tcyesno		g.sitm.phst	  |use phantom inventory
+	domain  tcyesno		g.sitm.swoc	  |warehouse in bom
+	domain  tcscpf		g.sitm.scpf	  |scrap factor
+	domain  tiqbm3		g.sitm.scpq	  |scrap quantity
+	domain  tccwar		g.sitm.cwar	  |warehouse
+	domain  tcosys		g.sitm.osys	  |order system
+	domain	tcopol		g.sitm.opol	  |order policy	|#200368.n
+	domain	tccpva		g.sitm.cpva	  |product variant code |#Gem.n
+								|#800-152273.sn
+	domain	tcyesno		g.sitm.sayn	  |Subitem Subassembly
+								|#800-152273.en
+								|#FP7_1ITM.sn
+	domain	tcsrce		g.sitm.srce	  |Subitem Default Supply Source
+								|#FP7_1ITM.en
+								|#LND-4707.so
+|								|#229251.sn
+|	domain	tcyesno		g.sitm.ifmi	  |Combined Ownership
+|								|#229251.en
+								|#LND-4707.eo
+								|#800-171954.sn
+	domain	tcexin		g.sitm.exin	  |Extra Information
+								|#800-171954.en
+								|#800-150558.sn
+	domain	tcbool		insert.use.up	  | insert use up material
+						  | true/false
+								|#800-150558.en
+	boolean	  		group.copy.activated		|#SM-02305.n
+
+								|#106-134533.so
+|	extern  domain  tcdsca	g.cuni.dsca  	  |unit description
+|	extern  domain  tcdsca	g.sitm.dsca  	  |sub item description
+|	extern  domain	tccuni	g.sitm.cuni  	  |inventory unit
+								|#106-134533.eo
+								|#106-134533.sn
+	extern  domain  tcdsca	bom010.cuni.dsca  |unit description
+	extern  domain  tcdsca	bom010.sitm.dsca  |sub item description
+	extern  domain	tccuni	bom010.sitm.cuni  |inventory unit
+								|#106-134533.en
+	extern	domain	tccpva	bom010.sitm.cpva  |prod.variant |#106-135624.n
+	extern	domain	tcitem	bom010.sitm.dfit  |Der.-from item |#FP7_T221.n
+								       |#DAL2.en
+	extern boolean    copy.activated |copying a record is done or not
+	extern domain tcmcs.str6 act.revision   |for drawing
+|								|#FP7_T221.so
+|	extern	domain	tcdsca	item.dsca.bom010	|main item dsca
+|	extern	domain	tcdsca	sitm.dsca.bom010        |sub item dsca
+|								|#FP7_T221.eo
+	extern	boolean		called.by.edm
+
+	#define ODMU_YES		(tccom000.odmu = tcyesno.yes)
+								|#205121.so
+|	#define TOOL			(tcibd001.itmt = tcitmt.tool)
+|	#define CHMA_YES		(tcibd001.chma = tcyesno.yes)
+|	#define MCOA_YES		(tcibd001.mcoa = tcyesno.yes)
+|	#define	ITEM_EDCO_YES		(tcibd001.edco = tcyesno.yes)
+								|#205121.eo
+								|#205121.sn
+								|#lnd2-10125.so
+|	#define TOOL			(g.mitm.itmt = tcitmt.tool)
+								|#lnd2-10125.eo
+	#define CHMA_YES		(g.mitm.chma = tcyesno.yes)
+	#define MCOA_YES		(g.mitm.mcoa = tcyesno.yes)
+	#define	ITEM_EDCO_YES		(g.mitm.edco = tcyesno.yes)
+								|#205121.en
+	#define ITEM_CHMA_YES
+^	if not CHMA_YES then
+^	      dal.set.error.message("tibom0009",trim$(tibom010.mitm))
+^	      return(DALHOOKERROR)
+^	endif
+	#define ITEM_MCOA_YES(X)
+^	 if not (MCOA_YES) then
+^								|#106-123021.so
+|^	 	ret = tiint.dlldmchm.chm.is.object.linked("", "", "tibom010" )
+^								|#106-123021.eo
+^								|#106-123021.sn
+^		ret = tiintdlldmchm.object.is.linked.to.chm("", "", "tibom010" )
+^								|#106-123021.en
+^		on case ret
+^		case 1:
+^			if (##X## = 1) then
+^				dal.set.error.message("tibom0006")
+^				return(DALHOOKERROR)
+^			endif
+^			break
+^		case 2:
+^			if (##X## = 2) then
+^				dal.set.error.message("tibom0006")
+^				return(DALHOOKERROR)
+^			endif
+^			break
+^		case 3:						|#106-123021.sn
+^			dal.set.error.message("tibom0006")
+^			return(DALHOOKERROR)
+^			break					|#106-123021.en
+^		endcase
+^	endif
+	#define CERTAIN_FIELDS_CHANGED	(
+^				cpha.prev <> tibom010.cpha
+^			or	cwar.prev <> tibom010.cwar
+^			or	exdt.prev <> tibom010.exdt
+^			or	indt.prev <> tibom010.indt
+^			or	ltom.prev <> tibom010.ltom
+^			or	ltou.prev <> tibom010.ltou
+^			or	not EQUAL.TO(ltov.prev, tibom010.ltov)
+^			or	opno.prev <> tibom010.opno)
+^			or	phst.prev <> tibom010.phst
+^			or	not EQUAL.TO(qana.prev, tibom010.qana)
+^			or	not EQUAL.TO(scro.prev, tibom010.scro)
+^			or	not EQUAL.TO(scpf.prev, tibom010.scpf)
+^			or	not EQUAL.TO(scpq.prev, tibom010.scpq)
+^			or	sitm.prev <> tibom010.sitm
+^			or	stcf.prev <> tibom010.stcf
+^			or	unef.prev <> tibom010.unef
+^			or	not EQUAL.TO(yldo.prev, tibom010.yldo)
+^			or	preq.prev <> tibom010.preq	|#1517164.n
+|								|#251215.so
+||******************************* DM integrations ****************************
+|
+|	#define		OK				0
+|	#define		NOT_OK				1
+|
+||+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+||* CM LINK Return Codes
+||+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+|
+|	#define		CM_LINK_SUCCESS			0
+|	#define		CM_LINK_FAIL_OTHER		3
+|
+||++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+||* CM APPROVE Return Codes
+||++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+|
+|	#define		CM_APPROVE_ACCEPT_ALL		0
+|	#define		CM_APPROVE_REJECT_ALL		1
+|
+||+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+||* CM UNLINK Return Codes
+||+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+|
+|	#define		CM_UNLINK_SUCCESS		0
+|	#define		CM_UNLINK_FAIL_OTHER		3
+|
+||************************ end of DM defines ********************************
+|								|#251215.eo
+	#define		BOM_LINES_SAME	(
+^	tibom010.leng	= :tibom010.leng and
+^	tibom010.widt	= :tibom010.widt and
+^	tibom010.noun	= :tibom010.noun and
+^	tibom010.qana	= :tibom010.qana and
+^	tibom010.scpf	= :tibom010.scpf and
+^	tibom010.scpq	= :tibom010.scpq and
+^	tibom010.cwar	= :tibom010.cwar and
+^	tibom010.opno	= :tibom010.opno and
+^	tibom010.cpha	= :tibom010.cpha and
+^	tibom010.phst	= :tibom010.phst and
+^	tibom010.unef	= :tibom010.unef and
+^	tibom010.lsel	= :tibom010.lsel and
+^	tibom010.preq	= :tibom010.preq )			|Mod.n
+|^	tibom010.preq	= :tibom010.preq and			|Mod.so
+|^	tibom010.expl	= :tibom010.expl)			|Mod.eo
+
+	#define		SITM_DETAILS	1
+	#define		ROUMAT_HEADER	2
+	#define		ROUMAT_DETAILS	3
+	#define		RD_HEADER	4
+	#define		TAIL		5
+
+|**** Object Hooks ************************************************************
+
+function extern long before.open.object.set()
+{
+	dal.skip.never.applicable.checks()			|#149757.n
+	called.by.edm = false
+	update.by.odm = false					|#210883.n
+	if	not read.parameters()
+	then	return(DALHOOKERROR)
+	endif
+	insert.use.up = false					|#1423773.n
+	define.field.dependencies()
+
+	return(0)
+}
+
+function extern long before.new.object()			|#800-164713.sn
+{
+	|* NB. This hook is executed both for New and for Duplicate
+	tibom010.almi = tcyesno.no				|#1984490.n
+	tibom010.altp = tcyesno.no
+	tibom010.usup = tcyesno.no				|#SM-02305.n
+	tibom010.efco = ""					|#248772.sn
+	tibom010.exco = ""					|#248772.en
+	return(0)
+}								|#800-164713.en
+
+function extern long method.is.allowed(long method)
+{
+	|* Declaration of local variables
+|	boolean		linked.to.co		|* Linked to Cha|#lnd2-11185.o
+	string			error.message(256) mb
+	domain	tccom.msgcode	message.code		|#106-130146.n
+|	boolean		project.inactive			|#1672403.o
+|	long		ret			|#800-168310.n	|#1672403.o
+
+	error.message = ""
+	message.code = ""
+|	insert.use.up = false			|#800-150558.n	|#1423773.o
+								|#800-168310.so
+|	project.inactive = project.greater.than.active(tibom010.mitm)
+								|#800-168310.eo
+|								|#1672403.so
+|	ret = project.greater.than.active(tibom010.mitm,	|#800-168310.sn
+|					  project.inactive)	|#800-168310.en
+|								|#1672403.eo
+	if	not get.main.item.data(tibom010.mitm)
+	then	dal.set.error.message("tibom1110m", trim$(tibom010.mitm))
+	|* Item %1$s not found in Item Production Data.
+		return(false)
+	endif
+
+	on case method
+	case DAL_NEW:
+|		if	project.inactive			|#1672403.o
+								|#1672403.sn
+		if tipcs.dll0020.project.status.greater.than.active(
+						tibom010.mitm)	|#1672403.en
+		then	dal.set.error.message("tibom24213")
+		|* Project is Inactive. Insertion, Duplication & Modification
+		|* not allowed.
+			return(false)
+		endif
+|		if	EQUAL.TO(tiipd001.unom, 0.0)		|#205121.o
+		if EQUAL.TO(g.mitm.unom, 0.0)		|#205121.n
+		then dal.set.error.message("tibom1510a", trim$(tibom010.mitm))
+		|* BOM cannot be maintained for item %1$s having zero BOM
+		|* quantity.
+			return(false)
+		endif
+								|#1423773.so
+|		if	tccom000.altm = tcyesno.yes	|#800/151980.sn
+|		then					|#800/151980.en
+|			insert.use.up = true		|#800-150558.n
+|		endif					|#800/151980.n
+								|#1423773.eo
+		break
+	case DAL_UPDATE:
+		if not update.by.odm then			|#210883.n
+			if	not isspace(tibom010.efco)
+		 	and	tccom000.odmu = tcyesno.yes
+	   	  	and	g.mitm.chma = tcyesno.yes
+	   	  	and	g.mitm.edco = tcyesno.yes
+	   		then	dal.set.error.message("tibom1212b")
+	   		|* BOM line has link with Change Management.
+				dal.set.error.message("tcmcss0206")
+				|* Cannot modify this record.
+				return(false)
+			endif
+		endif						|#210883.n
+|		if	project.inactive			|#1672403.o
+								|#1672403.sn
+		if tipcs.dll0020.project.status.greater.than.active(
+						tibom010.mitm)	|#1672403.en
+
+		then	dal.set.error.message("tibom24213")
+		|* Project is Inactive. Insertion, Duplication & Modification
+		|* not allowed.
+			return(false)
+		endif
+|		if	EQUAL.TO(tiipd001.unom, 0.0)		|#205121.o
+		if	EQUAL.TO(g.mitm.unom, 0.0)		|#205121.n
+		then	dal.set.error.message("tibom1510a",
+		|* BOM cannot be maintained for item %1$s having zero BOM
+		|* quantity.
+					trim$(tibom010.mitm))
+			return(false)
+		endif
+		break
+	case DAL_DESTROY:
+|		if	project.inactive and	|#1149833.sn	|#1672403.o
+								|#1672403.sn
+		if tipcs.dll0020.project.status.greater.than.active(
+						tibom010.mitm)	and
+								|#1672403.en
+			tipcs030.psts <> tcpsts.archived
+		then	dal.set.error.message("tibom24213")
+		|* Project is Inactive. Insertion, Duplication & Modification
+		|* not allowed.
+			return(false)
+		endif						|#1149833.en
+		if	tccom000.odmu = tcyesno.yes
+|	   	  and	tcibd001.chma = tcyesno.yes		|#205121.o
+	   	  and	g.mitm.chma = tcyesno.yes		|#205121.n
+		  and	g.mitm.edco = tcyesno.yes		|#1653561.sn
+		  and	not isspace(tibom010.efco)
+		  then
+		  	dal.set.error.message("tibom0203q")
+			|* Delete not possible.
+			return(false)				|#1653561.en
+|								|#1653561.so
+|	   	then	with.object.set.do(sequence.linked.to.co,
+||					2,			|#1608903.o
+|					3,			|#1608903.n
+|					linked.to.co)
+|			if	linked.to.co
+|			then	return(false)
+|			endif					|#1653561.eo
+		endif
+		break
+	endcase
+
+	return(true)
+}
+
+function extern long before.save.object(long mode)
+{
+	|* Declaration of local variables.
+	boolean		dummy.bool		|* Dummy Boolean.
+	domain	tccprj	mitm.project		|* Main Item Project.
+	domain	tccprj	dummy.project		|* Dummy Project.
+|	domain	tcitem	old.sub.item		|#200368.n	|#202935.o
+	domain	tccpva	dummy.cpva		|#200368.o	|#1672808.n
+
+	|* Initialize variables.
+	phantom.bom.customized = false				|#202935.n
+	dummy.cpva = 0						|#1672808.n
+
+	if group.copy.activated then				|#SM-02305.sn
+		tibom010.mrou = tcyesno.no
+		tibom010.altp = tcyesno.no
+		tibom010.usup = tcyesno.no
+		tibom010.rdsp = tcyesno.no
+		tibom010.unef = tcyesno.no			|#800-167684.n
+	endif							|#SM-02305.en
+
+	dummy.bool = get.main.item.data(tibom010.mitm)
+	with.old.object.values.do(get.prev.values)
+	on case mode
+	case DAL_NEW:
+		if	not called.by.edm then			|#FP8_T261.sn
+				tibom010.ledm = tcyesno.no
+		endif						|#FP8_T261.en
+		if	copy.activated
+		  or	group.copy.activated			|#250510.n
+		then	if	tibom010.txta <> 0
+			then	dummy.ret.val = copy.bom.text()
+			endif
+		endif
+
+		if	tipcs000.cbla = tcyesno.yes
+		  and	not project.present(tibom010.sitm, dummy.project)
+		  and	project.present(tibom010.mitm, mitm.project)
+		  and	not called.by.edm			|#241646.n
+		  and	get.subitem.data(tibom010.sitm)
+		  and	g.sitm.opol = tcopol.on.order
+		then	old.sub.item = tibom010.sitm
+								|#200368.sn
+			RETIFNOK(tcibd.dll0010.fill.segment(
+					tibom010.sitm,
+					mitm.project,
+					tcibd.apco.project))
+								|#200368.en
+								|#201411.sn
+			if	not get.subitem.data(tibom010.sitm)
+			then	RETIFNOK(tcibd.dll0205.copy.process(
+				   old.sub.item,
+				   tibom010.sitm,
+				   bom010.sitm.dsca,
+				   tcyesno.no,	|* copy prod.variant |#203506.sn
+|				   0,		|* prod variant	|#1672808.o
+				   false,   	|* reuse existing variant
+				   dummy.cpva,	|* prod.variant	|#1672808.n
+				   0,	 	|* option set
+				   0,		|* Eff. Unit	|#1873648.n
+				   utc.num(), 	|* ref.dt for suppl.rel.
+				   tcyesno.no,	|* make STO item
+				   "",	   	|* warehouse	|#203506.en
+|				   tcyesno.no,  |* Copy Item Text.|#228643.o
+				   tcyesno.yes, |* Copy Item Text.|#228643.n
+				   tcyesno.no,  |* Copy Item Alternatives.
+				   tcyesno.yes, |* Copy Item Supplier Data.
+   								|#1058454.sn
+								|#1876615.so
+|				   tcyesno.no,  |* Skip Inactive BP
+								|#1876615.eo
+								|#1876615.sn
+				   tcyesno.yes,  |* Skip Inactive BP				
+								|#1876615.en
+								|#1058454.en
+				   tcyesno.yes, |* Copy E-Item Relation.
+				   tcyesno.yes, |* Copy Item Prod. Data.
+				   tcyesno.no,  |* Copy Bill of Material.
+				   tcyesno.no,  |* Copy Routing.
+				   tcyesno.yes, |* Copy Refer. Designators.
+				   tcyesno.no,  |* UEF requirements.
+				   tcyesno.yes, |* supplying relations.
+				   tcyesno.no,  |* Copy Project Activities.
+								|#215034-FP4.sn
+				   tcynna.not.app))|* Approve Conversion Factors
+								|#215034-FP4.en
+								|#202935.sn
+				if	tibom010.cpha = tcyesno.yes
+				then	phantom.bom.customized = true
+				endif				|#202935.en
+			endif
+								|#201411.en
+			if not tibom010.sitm.is.valid(mode) then
+				return(DALHOOKERROR)
+			endif
+								|#201411.so
+|			RETIFNOK(tipcs.dll2002.copy.item(old.sub.item,
+|							 tibom010.sitm,
+|							 tcyesno.no,
+|							 tcyesno.no,
+|							 tcyesno.no,
+|							 false,
+|							 dummy.cpva,
+|							 0,
+|							 utc.num(),
+|							 ""))
+|			update.occ()				|#201411.eo
+		endif
+		break
+	case DAL_UPDATE:
+		if	tibom010.stcf = tcyesno.no
+		  and	tibom010.unef = tcyesno.no
+		then	dal.set.error.message("tibom1110r",
+		|* Exceptions must be defined for Non Standard Configuration.
+		|* (BOM line %1$s, %2$d, %3$d).
+					trim$(tibom010.mitm),
+					tibom010.pono,
+					tibom010.seqn)
+			return(DALHOOKERROR)
+		endif
+								|#202935.sn
+		if	phantom.customized.item.has.bom(tibom010.sitm) = 1
+		then	phantom.bom.customized = true
+		else	phantom.bom.customized = false
+		endif
+								|#202935.en
+		break
+	endcase
+								|#BR1101765.sn
+	|* Check the combination sitm, warehouse and WMS
+	RETIFNOK(check.wms.sitm.warehouse())			|#BR1101765.en
+
+|	tibom.dll0008.convert.utc.to.date(tibom010.indt)	|#fp8_effd.so
+|	tibom.dll0008.convert.utc.to.date(tibom010.exdt)	|#fp8_effd.eo
+
+	return(0)
+}
+
+function extern long after.save.object(long mode)
+{
+	|* Declaration of local variables.
+
+	domain	tccprj	project.segment.mitm	|* Project Segment Main Item.
+
+	on case mode
+	case DAL_NEW:
+		RETIFNOK(tiipd.dll0003.set.ipd.net.change(
+					tibom010.sitm))
+		if	tibom010.indt > indt.prev
+		  and	indt.prev <> 0
+		then	ref.date = indt.prev
+		else	ref.date = tibom010.indt
+		endif
+		dummy.ret.val = tcibd.dll0010.determine.segment(
+					tibom010.mitm,
+					tcibd.apco.project,
+					project.segment.mitm)
+		if	not isspace(project.segment.mitm)
+		then	ref.date = utc.num()
+		endif
+
+|		tibom.dll0003.set.item.net.change.status(	|#169264.o
+								|#169264.sn
+		tibom.dll0003.set.item.net.change.status.incl.parents(
+								|#169264.en
+					tibom010.mitm,
+					ref.date,
+					false)	|* i.ep.flag.only|#169264.n
+
+		if	tibom010.cpha = tcyesno.yes
+		then
+|			tibom.dll0003.set.item.net.change.status2(|#169264.o
+								|#169264.sn
+			tibom.dll0003.set.component.net.change.status(
+								|#169264.en
+					tibom010.sitm,
+					ref.date,
+					false)	|* i.ep.flag.only|#169264.n
+		endif
+		tiint.dllcprpd.set.netchange(
+					tibom010.sitm,	|* Item.
+					tibom010.cwar,	|* Warehouse.
+					0,		|* Date.
+					false,		|* Item is Parent.
+					true,		|* Item is Child.
+					tibom010.mitm,	|* Parent Item.
+					get.compnr(),	|* Logistic Company.
+					true,		|* MRP
+					false,		|* Goods Flow Change
+					true,		|* Set Net Change Status
+					false)		|* Perform Commit.
+								|#106530.en
+								|#1352964.sn
+		|* Issue a warning when a cycle is detected in EP.
+		|* NB. Continue with saving. Do not set an error condition
+		if tiint.dllcprd.cycle.detected( ) then
+			dal.set.warning.message("tibom010.02",
+			|* Loop detected in Enterprise Planning Data for main
+			|* item / sub item %1$s / %2$s
+				strip$(tibom010.mitm),
+				strip$(tibom010.sitm))
+		endif
+								|#1352964.en
+		if	copy.activated
+		then	if	tibom010.unef = tcyesno.yes
+			then	RETIFNOK(copy.effectivity.statements())
+			endif
+
+			if	tibom.dll0009.material.routing.relations.exist(
+					previous.mitm,
+					copied.pono,
+					copied.seqn)
+			then	RETIFNOK(
+				tibom.dll0009.copy.material.routing.relations(
+					previous.mitm,
+					copied.pono,
+					copied.seqn))
+				copy.activated = false
+			endif
+								|#LND-4095.sn
+			if previous.sitm <> tibom010.sitm then 	|#1501670.n
+|			RETIFNOK(				|#1501670.so
+|			     tibom.dll0009.copy.routing.and.phantom.routing.rel(
+|					previous.mitm,
+|					copied.pono,
+|					copied.seqn,
+|					previous.sitm,
+|					tibom010.mitm,
+|					tibom010.sitm))		|#1501670.eo
+								|#1501670.sn
+				RETIFNOK(
+			       tibom.dll0009.copy.phantom.routing.relationships(
+					previous.mitm,
+					copied.pono,
+					copied.seqn,
+					previous.sitm,
+					tibom010.mitm,
+					tibom010.sitm))
+			endif					|#1501670.en
+								|#LND-4095.en
+			if	previous.mitm = tibom010.mitm
+|			  and	copied.pono = tibom010.pono	|#800-167684.so
+|			  and	copied.seqn <> tibom010.seqn	|#800-167684.eo
+			  and	(copied.pono <> tibom010.pono	|#800-167684.sn
+			  or	copied.seqn <> tibom010.seqn)	|#800-167684.en
+			then	RETIFNOK(
+				    tibom.dll0020.copy.ref.designators.by.bom(
+				   	tibom010.mitm,
+				   	tibom010.mitm,
+				   	copied.pono,
+				   	tibom010.pono,
+				   	copied.seqn,
+				   	tibom010.seqn))
+			endif
+
+        		if	tccom.dll0050.document.exists(
+        				"ttibom010",
+        		 		tccom.dll0050.compose.entity.key(
+        					previous.mitm,
+        					copied.pono,
+        					copied.seqn))
+        		then
+        			RETIFNOK(tccom.dll0050.doclink.copy(
+        				"",
+        				"ttibom010",
+        				tccom.dll0050.compose.entity.key(
+        					previous.mitm,
+        					copied.pono,
+        					copied.seqn),
+        				"ttibom010",
+        				tccom.dll0050.compose.entity.key(
+        					tibom010.mitm,
+        					tibom010.pono,
+        					tibom010.seqn)))
+        		endif
+		endif
+		if	tccom000.altm = tcyesno.yes	|#1423773.sn
+		then
+			insert.use.up = true
+		endif					|#1423773.en
+		break
+	case DAL_UPDATE:
+		if	tibom010.indt > indt.prev
+		  and	indt.prev <> 0
+		then	ref.date = indt.prev
+		else	ref.date = tibom010.indt
+		endif
+		dummy.ret.val = tcibd.dll0010.determine.segment(
+				tibom010.mitm,
+				tcibd.apco.project,
+				project.segment.mitm)
+		if	not isspace(project.segment.mitm)
+		then	ref.date = utc.num()
+		endif
+
+		if	CERTAIN_FIELDS_CHANGED
+		then	RETIFNOK(tiipd.dll0003.set.ipd.net.change(
+					tibom010.sitm))
+|			tibom.dll0003.set.item.net.change.status(|#169264.o
+								|#169264.sn
+			tibom.dll0003.set.item.net.change.status.incl.parents(
+								|#169264.en
+					tibom010.mitm,
+					ref.date,
+					false)	|* i.ep.flag.only|#169264.n
+		endif
+
+		if	(tibom010.cpha = tcyesno.yes
+		  and	CERTAIN_FIELDS_CHANGED)
+		  or	(tibom010.cpha = tcyesno.no
+		  and	cpha.prev = tcyesno.yes)
+		then
+|			tibom.dll0003.set.item.net.change.status2(|#169264.o
+								|#169264.sn
+			tibom.dll0003.set.component.net.change.status(
+								|#169264.en
+					tibom010.sitm,
+					ref.date,
+					false)	|* i.ep.flag.only|#169264.n
+		endif
+								|#204537.sn
+								|#LND-4095.so
+|		RETIFNOK(handle.phantom.routing.relations.updating(
+|				false))		|* delete
+								|#LND-4095.eo
+								|#LND-4095.sn
+		RETIFNOK(tibom.dll0009.handle.phantom.routing.relations.update(
+					false,		|*
+					cpha.prev,
+					tibom010.cpha,
+					tibom010.mitm,
+					tibom010.pono,
+					tibom010.seqn,
+					tibom010.sitm))
+								|#LND-4095.en
+								|#204537.en
+		if CERTAIN_FIELDS_CHANGED then			|#243224.sn
+			tiint.dllcprpd.set.netchange(
+					tibom010.sitm,	|* Item.
+					tibom010.cwar,	|* Warehouse.
+					0,		|* Date.
+					false,		|* Item is Parent.
+					true,		|* Item is Child.
+					tibom010.mitm,	|* Parent Item.
+					get.compnr(),	|* Logistic Company.
+					true,		|* MRP
+					false,		|* Goods Flow Change
+					true,		|* Set Net Change Status
+					false)		|* Perform Commit.
+		endif
+
+		if tibom010.sitm <> sitm.prev then
+		   tiint.dllcprpd.set.netchange(
+					sitm.prev,	|* Item.
+					cwar.prev,	|* Warehouse.
+					indt.prev,		|* Date.
+					false,		|* Item is Parent.
+					true,		|* Item is Child.
+					tibom010.mitm,	|* Parent Item.
+					get.compnr(),	|* Logistic Company.
+					true,		|* MRP
+					false,		|* Goods Flow Change
+					true,		|* Set Net Change Status
+					false)		|* Perform Commit.
+		endif						|#243224.en
+
+		break
+	endcase
+
+	RETIFNOK(handle.publish.bill.of.resources.bom(		|#JVD.sn
+					mode,
+					false))			|#JVD.en
+
+	return(0)
+}
+
+function extern long after.destroy.object()			|#243224.sn
+{
+	tiint.dllcprpd.set.netchange(
+					tibom010.sitm,	|item
+					tibom010.cwar,	|warehouse
+					tibom010.indt,	|date
+					false,		|item is parent
+					true,		|item is child
+					tibom010.mitm,	|parent item
+					compnr,		|logistic comp
+					true,		|MRP
+					false,		|goods flow change
+					true,		|set net change status
+					false)		|perform commit
+
+	RETIFNOK(handle.publish.bill.of.resources.bom(		|#1590774.sn
+					DAL_DESTROY,
+					false))			|#1590774.en
+
+	return(0)
+}
+								|#243224.en
+								|#202935.sn
+function extern	after.commit.transaction()
+{
+	|* Declaration of local variables.
+	domain	tcitem	tmp.item		|* Temp. Item.
+	domain	tccprj	mitm.project		|* Main Item Project.
+
+	domain	tcitem	original.mitm				|#800-150558.sn
+	domain	tcitem	original.sitm
+	domain	tcpono	original.pono
+	domain	tcsern	original.seqn
+	domain	tccwar	original.cwar
+	domain	tiutcs	original.exdt				|#800-150558.en
+
+								|#800-150558.sn
+	db.retry.point()
+	if	insert.use.up
+	then
+		select	tibom010.mitm:original.mitm,
+			tibom010.pono:original.pono,
+			tibom010.seqn:original.seqn,
+			tibom010.sitm:original.sitm,
+			tibom010.cwar:original.cwar,
+			tibom010.exdt:original.exdt
+		from	tibom010
+		where	tibom010._index1 = {:tibom010.mitm,
+					    :tibom010.pono}
+		and	tibom010.seqn < :tibom010.seqn
+		and	tibom010.cpha = tcyesno.no
+		order by tibom010._index1 desc
+		as set with 1 rows
+		selectdo
+			tibom.dll0050.add.alternatives.by.bom.line(
+					tibom010.mitm,
+					tibom010.pono,
+					tibom010.seqn,
+					tcalpr.use.up,
+					original.sitm)
+								|#241749.so
+|			if	not tiint.dllwhwmd.use.item.ordering.data(
+|					original.cwar,
+|					original.sitm)
+|			then
+|				tiint.dllwhwmd.update.last.allowed.order.date(
+|					original.cwar,
+|					original.sitm,
+|					original.exdt)
+|			else
+|				tiint.dlltcibd.update.last.allowed.order.date(
+|					original.sitm,
+|					original.exdt)
+|			endif
+								|#241749.eo
+		endselect
+	endif
+	commit.transaction()					|#800-150558.en
+
+
+	db.retry.point()
+	if	phantom.bom.customized
+	then
+|		if	isspace(old.sub.item)			|#1675573.o
+|		then						|#1675573.o
+		dummy.ret.val = tcibd.dll0010.determine.segment(
+					tibom010.sitm,
+					tcibd.apco.none,
+					tmp.item)
+		dummy.ret.val = tcibd.dll0010.fill.segment(
+					old.sub.item,
+					tmp.item,
+					tcibd.apco.none)
+|		endif						|#1675573.o
+								|#216850.sn
+		dummy.ret.val = project.present(tibom010.mitm, mitm.project)
+								|#216850.en
+		dummy.ret.val = insert.phantom.levels.in.bom(
+					old.sub.item,
+					tibom010.sitm,
+					mitm.project,
+					tibom010.qana,
+					tibom010.scpf,
+					tibom010.scpq,
+					tibom010.pono,
+|					tiipd001.unom)		|#205121.o
+					g.mitm.unom)		|#205121.n
+|		old.sub.item = ""		|#1495951.n	|#1675573.o
+		commit.transaction()
+		phantom.bom.customized = false
+	endif
+	group.copy.activated = false				|#SM-02305.n
+	copy.activated = false					|#800-171954.n
+	insert.use.up = false					|#1423773.n
+}
+								|#202935.en
+function extern long before.destroy.object()
+{
+	|* Declaration of local variables.
+	domain	tiutcs	reference.date		|* Reference Date.
+	domain	tccprj	project.segment.mitm	|* Project Segment Main Item.
+
+	RETIFNOK(handle.publish.bill.of.resources.bom(		|#JVD.sn
+					DAL_DESTROY,
+					true))			|#JVD.en
+								|#1672403.sn
+	if not tipcs.dll0020.project.status.greater.than.active(tibom010.mitm)
+		|* Items linked to projects greater than active
+		|* do not have planned inventory transactions, so only
+		|* update the net change flags in tiipd001 and cprpd100
+		|* when the project status <= active.
+	then							|#1672403.en
+		RETIFNOK(tiipd.dll0003.set.ipd.net.change(tibom010.sitm))
+		dummy.ret.val = tcibd.dll0010.determine.segment(
+					tibom010.mitm,
+					tcibd.apco.project,
+					project.segment.mitm)
+		if	not isspace(project.segment.mitm)
+		then	reference.date = utc.num()
+		else	reference.date = tibom010.indt
+		endif
+|		tibom.dll0003.set.item.net.change.status(	|#169264.o
+								|#169264.en
+		tibom.dll0003.set.item.net.change.status.incl.parents(
+								|#169264.en
+					tibom010.mitm,
+					reference.date,
+					false)	|* i.ep.flag.only|#169264.n
+		if	tibom010.cpha = tcyesno.yes
+		then
+|			tibom.dll0003.set.item.net.change.status2(|#169264.o
+								|#169264.sn
+			tibom.dll0003.set.component.net.change.status(
+								|#169264.en
+					tibom010.sitm,
+					reference.date,
+					false)	|* i.ep.flag.only|#169264.n
+		endif
+	endif							|#1672403.n
+	if	tibom010.unef = tcyesno.yes
+	then	dummy.ret.val = tcuef.dll0003.create.compressed.key(
+					delete.key,
+					"tibom010",
+					tibom010.mitm,
+					tibom010.pono,
+					tibom010.seqn)
+		if	not tcuef.dll0004.delete.effectivity.validations(
+					delete.key)
+		then	return(DALHOOKERROR)
+		endif
+	endif
+
+								|#LND-4095.so
+|	RETIFNOK(handle.phantom.routing.relations.updating(	|#204537.sn
+|			true))			|*  delete	|#204537.en
+								|#LND-4095.eo
+								|#LND-4095.sn
+	RETIFNOK(tibom.dll0009.handle.phantom.routing.relations.update(
+					true,
+					cpha.prev,
+					tibom010.cpha,
+					tibom010.mitm,
+					tibom010.pono,
+					tibom010.seqn,
+					tibom010.sitm))
+								|#LND-4095.en
+	|**********************************************************************
+	|* To remove the linked records in DM, on deletion of the  BOM line.
+	|* Execute only if the object is linked
+	|**********************************************************************
+	if	not isspace(tibom010.efco)
+	  or	not isspace(tibom010.exco)
+	  or	tiint.dlldmchm.chm.is.object.linked("","","tibom010") <> 0
+	then	dummy.ret.val = tiint.dlldmchm.chm.object.remove(
+					"",
+					"",
+					"tibom010")
+	endif
+								|#800-150558.sn
+	RETIFNOK(tibom.dll0050.delete.alternatives.by.bom.line(
+					tibom010.mitm,
+					tibom010.pono,
+					tibom010.seqn))
+								|#800-150558.en
+
+	return(0)
+}
+
+function extern long set.object.defaults()
+{
+	tibom010.exdt.object.default()
+|	tibom010.indt.object.default()				|#fp8_effd.o
+	tibom010.preq.object.default()
+
+	return(0)
+}
+
+|**** Property Hooks **********************************************************
+
+|++++ tibom010.almi - Allow Multiple Items ++++++++++++++++++++++++++++++++++++
+								|#SL149757.sn
+function extern boolean tibom010.almi.is.never.applicable()
+{
+	if	tccom000.altm <> tcyesno.yes
+	then	return(true)
+	else	return(false)
+	endif
+}
+								|#SL149757.en
+
+								|#LND2-10312.sn
+function extern boolean tibom010.almi.yes.is.applicable(long i.mode)
+{
+	if i.mode = 0 then
+		return(true)
+	endif
+
+	if tibom010.altp = tcyesno.no
+	and tibom010.usup = tcyesno.no
+	then
+		return(false)
+	endif
+
+	return(true)
+}
+
+function extern tibom010.almi.update()
+{
+	if tibom010.altp = tcyesno.no
+	and tibom010.usup = tcyesno.no
+	then
+		tibom010.almi = tcyesno.no
+	endif
+}								|#LND2-10312.en
+
+|++++ tibom010.altp - Alternatives Present ++++++++++++++++++++++++++++++++++++
+								|#SL149757.sn
+function extern boolean tibom010.altp.is.never.applicable()
+{
+	if	tccom000.altm <> tcyesno.yes
+	then	return(true)
+	else	return(false)
+	endif
+}
+								|#SL149757.en
+|++++ tibom010.usup - Use Up Materials Present ++++++++++++++++++++++++++++++++
+								|#800-150558.sn
+function extern boolean tibom010.usup.is.never.applicable()
+{
+	if	tccom000.altm <> tcyesno.yes
+	then	return(true)
+	else	return(false)
+	endif
+}
+								|#800-150558.en
+
+								|#FP4_SUBC_2.so
+|++++ tibom010.stsr - Supply to Subcontractor +++++++++++++++++++++++++++++++++
+
+|function extern boolean tibom010.stsr.is.derived()		|#800-153633.sn
+|{
+|	if	tiint.dllwhwmd.floor.stock(tibom010.sitm)
+|	then	return(true)
+|	endif
+|
+|	return(false)
+|}
+|
+|function extern tibom010.stsr.update()
+|{
+|	if	tiint.dllwhwmd.floor.stock(tibom010.sitm)
+|	then	tibom010.stsr = tcyesno.no
+|	endif
+|}								|#800-153633.en
+								|#FP4_SUBC_2.eo
+
+								|#FP4_SUBC_2.sn
+|++++ tibom010.sbsr - Supplied by Subcontractor +++++++++++++++++++++++++++++++
+								|#800-160787.sn
+|function extern boolean tibom010.sbsr.is.never.applicable()	|#PLP_PJPG_HB.so
+|{
+|	if tccom000.smfm = tcyesno.yes then			|#800-162492.o
+|	if tccom000.smfm = tcyesno.no then			|#800-162492.n
+|		return(true)
+|	else
+|		return(false)
+|	endif
+|}								|#PLP_PJPG_HB.eo
+|* Field is also used for subcontracting without material flow.	|#PLP_PJPG_HB.n
+|function extern boolean tibom010.sbsr.is.applicable()		|#lnd-9664.so
+|{
+|	if tibom010.ifmi = tcyesno.yes or
+|	   tibom010.icfm = tcyesno.yes then
+|		return(false)
+|	endif
+|
+|	return(true)
+|}								|#lnd-9664.eo
+
+function extern boolean tibom010.sbsr.yes.is.applicable()	|#800-163554.sn
+{
+	if	tibom010.cpha = tcyesno.yes
+	  or	tibom010.ifmi = tcyesno.yes			|#lnd-9664.sn
+	  or	tibom010.icfm = tcyesno.yes			|#lnd-9664.en
+	then
+		return(false)
+	endif
+
+	return(true)
+}								|#800-163554.en
+								|#800-160787.en
+|function extern boolean tibom010.sbsr.is.derived()		|#1364009.so
+|{
+|	if tiint.dllwhwmd.floor.stock(tibom010.sitm) then
+|		return(true)
+|	endif
+|
+|	return(false)
+|}								|#1364009.eo
+
+function extern tibom010.sbsr.update()
+{
+								|#800-160787.sn
+|	if tccom000.smfm = tcyesno.yes then			|#800-163903.o
+	if tccom000.smfm = tcyesno.no then			|#800-163903.n
+		tibom010.sbsr = tcyesno.no
+	endif
+								|#800-160787.en
+|	if tiint.dllwhwmd.floor.stock(tibom010.sitm) then	|#1364009.so
+|		tibom010.sbsr = tcyesno.yes
+|	endif							|#1364009.eo
+	if called.by.edm then					|#1602568.sn
+		if tibom010.cpha = tcyesno.yes then
+			tibom010.sbsr = tcyesno.no
+		endif
+	endif							|#1602568.en
+}								|#FP4_SUBC_2.eo
+								|#LND-4707.so
+||+++++ tibom010.owns - Ownership ++++++++++++++++++++++++++++++++++++++++++++++
+|								|#800-160787.sn
+|function extern boolean tibom010.owns.is.never.applicable()
+|{
+|	if tccom000.smfs = tcyesno.no then
+|		return(true)
+|	else
+|		return(false)
+|	endif
+|}
+|								|#800-160787.en
+|								|#800-172375.so
+||function extern boolean tibom010.owns.is.derived()		|#FP4_SUBC_AP.sn
+||{
+||	if tibom010.ifmi = tcyesno.yes then
+||		return(true)
+||	endif
+||
+||	return(false)
+||}								|#800-172375.eo
+|
+|function extern tibom010.owns.update()
+|{
+|						|#800-160787.sn	|#FP4-IFMI.so
+||	if tccom000.smfs = tcyesno.yes then
+||		tibom010.owns = tcowns.comp.owned
+||	endif
+|						|#800-160787.en	|#FP4-IFMI.eo
+|
+|	if tibom010.ifmi = tcyesno.yes then
+|		|* will be "overwritten" later in ticst001.owns
+|		|* during order creation
+||		tibom010.owns = tcowns.not.appl			|#FP4-IFMI.o
+|		tibom010.owns = tcowns.cust.owned		|#FP4-IFMI.n
+|	endif
+|
+||	if tibom010.ifmi = tcyesno.no then			|#FP4-IFMI.so
+||		tibom010.owns = tcowns.comp.owned
+||	endif							|#FP4-IFMI.eo
+|}
+|
+|								|#800-160787.sn
+|function extern boolean tibom010.owns.comp.owned.is.applicable()
+|{
+|	return(true)
+|}
+|								|#800-160787.en
+|
+|function extern boolean tibom010.owns.consigned.is.applicable()
+|{
+|	return(false)
+|}
+|
+|function extern boolean tibom010.owns.return.as.issue.is.applicable()
+|{
+|	return(false)
+|}
+|
+|function extern boolean tibom010.owns.deferred.is.applicable()
+|{
+|	return(false)
+|}
+|
+|function extern boolean tibom010.owns.not.appl.is.applicable()
+|{
+|	return(false)						|#FP4-IFMI.n
+||								|#FP4-IFMI.so
+||	if tibom010.ifmi = tcyesno.no then
+||		return(false)
+||	endif
+||
+||	return(true)
+|								|#FP4-IFMI.eo
+|}								|#FP4_SUBC_AP.en
+								|#LND-4707.eo
+
+|++++ tibom010.cpha - Phantom +++++++++++++++++++++++++++++++++++++++++++++++++
+								|#SL149757.sn
+function extern boolean tibom010.cpha.yes.is.applicable()
+{
+	|* Check if alternatives present
+|								|#800-149606.so
+|	if	tccom000.altm = tcyesno.yes			|#800-147895.n
+|	  and	tibom.dll0010.count.alternatives.for.bom.line(
+|						tibom010.mitm,
+|						tibom010.pono,
+|						tibom010.seqn) > 0
+|								|#800-149606.eo
+|	if	tibom010.altp = tcyesno.yes	|#800-149606.n	|#800-150558.o
+	if	tibom010.altp = tcyesno.yes			|#800-150558.n
+	or	tibom010.usup = tcyesno.yes			|#800-150558.n
+	then	return(false)
+|	else	return(true)					|#216243.o
+	endif
+	if	tibom010.sbsr = tcyesno.yes			|#800-163554.sn
+	then	return(false)
+	endif							|#800-163554.en
+|	if LESS.THAN(tibom010.qana, 0.0) then	|#216243.sn	|#221019.so
+|		dal.set.error.message("tibom010.j")
+|		|* Negative Quantity for Phantom Material not allowed
+|	   return(false)
+|	endif					|#216243.en	|#221019.eo
+	return(true)						|#216243.n
+}
+								|#SL149757.en
+function extern tibom010.cpha.update()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	tibom010.cpha = g.sitm.cpha
+	endif
+}
+
+|++++ tibom010.cwar - Warehouse +++++++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.cwar.is.mandatory()
+{
+	if	get.subitem.data(tibom010.sitm)
+	  and	g.sitm.swoc = tcyesno.yes
+	  and	isspace(tibom010.cwar)
+	then	dal.set.error.message("tibom010.c")
+	|* Warehouse must be specified in BOM (as specified in Item Production
+	|* Data)
+		return(true)
+	endif
+
+	return(false)
+}
+
+function extern boolean tibom010.cwar.is.valid(long has_changed)
+{
+
+|	|* Declaration of local variables.			|#lnd2-521.so
+|	boolean		   dummy.bool		|* Dummy Boolean.
+|	domain	tctypw	   warehouse.type	|* Warehouse Type.
+|	domain	tcncmp	   logistical.comp	|* Logistical Company.
+|	domain	tcemm.grid dummy.ent.unit	|* Dummy Enterprise Unit.
+|
+|	dummy.bool = get.subitem.data(tibom010.sitm)
+|	get.warehouse.type(tibom010.cwar, warehouse.type)
+|	if not	(warehouse.type = tctypw.normal
+|	   or 	warehouse.type = tctypw.wip
+|	   or 	warehouse.type = tctypw.consignment)		|#800-156734.sn
+|	then
+|		dal.set.error.message("tibom010.w", trim$(tibom010.cwar))
+|		|* Warehouse %1$s must be of type Normal or Shop Floor or
+|		|* Consignment (Not Owned).
+|	endif							|#800-156734.en
+|
+||	then	dal.set.error.message("tibom010.i")		|#800-156734.so
+||		|* Warehouse must be of type 'Normal' or 'Shop Floor'.
+||		return(false)
+||	endif							|#800-156734.eo
+|
+|	|* Check whether the entity belongs to the present logistic company.
+|	logistical.comp = get.compnr()
+|	if	not tcint.dlltcemm.what.enterprise.unit.is.entity.of(
+|					logistical.comp,
+|					tcemm.enty.warehouse,
+|					tibom010.cwar,
+|					dummy.ent.unit)
+|	then	dal.set.error.message("tibom010.k", tibom010.cwar)
+|	|* Warehouse %1$s does not belong to current logistic company.
+|		return(false)
+|	endif							|#lnd2-521.eo
+
+								|#lnd2-521.sn
+	if timfc.dll0101.is.warehouse.valid(tibom010.cwar, true) <> 0 then
+		|* Error messages are set.
+		return(false)
+	endif							|#lnd2-521.en
+	if has_changed then					|#LND2-10608.sn		|
+		RETIFNOKF(
+		    tiint.dlltcsec.warehouse.security.check.use.allowed(
+						tibom010.cwar))
+	endif							|#LND2-10608.en
+
+	return(true)
+}
+								|#LND2-10608.sn
+function extern boolean tibom010.cwar.is.derived()
+{
+	if not tiint.dlltcsec.warehouse.security.use.allowed(tibom010.cwar) then
+		return(true)
+	endif
+	return(false)
+}								|#LND2-10608.en
+
+function extern long tibom010.cwar.filter(ref	string	o.select(),
+					  ref 	string	o.from(),
+					  ref	string	o.where())
+{
+
+	string			auth.string(4096)		|#LND2-10608.n
+
+	auth.string = tiint.dlltcsec.warehouse.security.filter( |#LND2-10608.sn
+|								|#1993824.so
+|					"tibom010.cwar")  	|#LND2-10608.en
+|								|#1993824.eo
+					"tcmcs003.cwar")	|#1993824.n
+								|#800-156734.so
+	|* Declaration of local variables.
+|	string		dll2003.from(256)
+|	string		dll2003.where(256)
+
+|	tcemm.dll2003.what.enterp.unit.is.entity.of.filter(
+|					get.compnr(),
+|					tcemm.enty.warehouse,
+|					"tcmcs003.cwar",
+|					o.select,
+|					dll2003.from,
+|					dll2003.where )
+|
+|	o.from = dll2003.from & ", tcmcs003"
+|	o.where = dll2003.where & " and (tcmcs003.typw = tctypw.normal"
+|				& " or tcmcs003.typw = tctypw.wip)"
+								|#800-156734.eo
+	tiint.dlltcmcs.warehouse.types.and.key.entities.filter(	|#800-156734.sn
+						o.select,
+						o.from,
+						o.where,
+						get.compnr(),
+						tctypw.normal,
+						tctypw.wip,
+						tctypw.consignment)
+	o.where = o.where & " and " & auth.string		|#LND2-10608.n
+								|#800-156734.en
+	return(0)
+}
+
+function extern tibom010.cwar.update()
+{
+	if	get.subitem.data(tibom010.sitm)
+	and	g.sitm.swoc = tcyesno.yes			|#1636567.n
+	then	tibom010.cwar = g.sitm.cwar
+	endif
+}
+
+|++++ tibom010.exdt - Expiry Date +++++++++++++++++++++++++++++++++++++++++++++
+								|#800-144955.sn
+function extern boolean tibom010.exdt.is.mandatory()
+{
+	return(true)
+}								|#800-144955.en
+
+function extern boolean tibom010.exdt.is.derived()
+{
+	|* Declaration of local variables
+	boolean		dummy.bool		|* Dummy Boolean.
+
+	dummy.bool = get.main.item.data(tibom010.mitm)
+	if	tccom000.odmu = tcyesno.yes
+|	  and	tcibd001.chma = tcyesno.yes			|#205121.so
+|	  and	tcibd001.edco = tcyesno.yes			|#205121.eo
+   	  and	g.mitm.chma = tcyesno.yes			|#205121.sn
+	  and	g.mitm.edco = tcyesno.yes			|#205121.en
+	then	return(true)
+	else	return(false)
+	endif
+}
+
+function extern boolean tibom010.exdt.is.valid(long has_changed)
+{
+	if	tibom010.exdt < tibom010.indt
+	then	dal.set.error.message("tibom11103")
+	|* Expiry date cannot be less than effective date.
+		return(false)
+	endif
+
+	return(true)
+}
+
+function void tibom010.exdt.object.default()
+{
+	set.max(tibom010.exdt)
+}
+
+|++++ tibom010.efco - Eff Change Order ++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.efco.is.never.applicable()	|#800-168404.sn
+{
+	if tccom000.odmu = tcyesno.no then
+		return(true)
+	endif
+
+	return(false)
+}								|#800-168404.en
+
+|++++ tibom010.exco - Exp Change Order ++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.exco.is.never.applicable()	|#800-168404.sn
+{
+	if tccom000.odmu = tcyesno.no then
+		return(true)
+	endif
+
+	return(false)
+}								|#800-168404.en
+
+|++++ tibom010.expl - Exploded by SCS Planner +++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.expl.is.never.applicable()
+{
+	return(tccom000.plai = tcyesno.no)
+}
+
+|++++ tibom010.indt - Effective Date ++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.indt.is.derived()
+{
+	boolean		dummy.bool	|* Dummy Boolean.
+
+	dummy.bool = get.main.item.data(tibom010.mitm)
+	if	tccom000.odmu = tcyesno.yes
+|	  and	tcibd001.chma = tcyesno.yes			|#205121.so
+|	  and	tcibd001.edco = tcyesno.yes			|#205121.eo
+   	  and	g.mitm.chma = tcyesno.yes			|#205121.sn
+	  and	g.mitm.edco = tcyesno.yes			|#205121.en
+	then	return(true)
+	else	return(false)
+	endif
+}
+
+function extern tibom010.indt.update()
+{
+
+	|* Declaration of local variables.
+	boolean		dummy.bool	|* Dummy Boolean.
+	domain	tiutcs	reference.date				|#211741.n
+
+	dummy.bool = get.main.item.data(tibom010.mitm)
+	if	tccom000.odmu = tcyesno.yes
+|	  and	tcibd001.chma = tcyesno.yes			|#205121.o
+	  and	g.mitm.chma = tcyesno.yes			|#205121.n
+	then	set.max(tibom010.indt)
+	else	tibom010.indt = utc.num()
+		if not isspace(g.mitm.cprj) then		|#211741.sn
+			|* Correct for Project Reference Date
+			reference.date =
+			tipcs.dll0020.read.reference.date.of.project(
+								g.mitm.cprj)
+			if reference.date <> 0 and
+			   reference.date < tibom010.indt then
+				tibom010.indt = reference.date
+			endif
+		endif						|#211741.en
+	endif
+}
+
+|function void tibom010.indt.object.default()			|#fp8_effd.so
+|{
+|	|* Declaration of local variables.
+|	boolean		dummy.bool		|* Dummy Boolean.
+|	domain	tiutcs	reference.date				|#211741.n
+|
+|	dummy.bool = get.main.item.data(tibom010.mitm)
+|	if	tccom000.odmu = tcyesno.yes
+||	  and	tcibd001.chma = tcyesno.yes			|#205121.o
+|	  and	g.mitm.chma = tcyesno.yes			|#205121.n
+|	then	set.max(tibom010.indt)
+|	else	tibom010.indt = utc.num()
+|		if not isspace(g.mitm.cprj) then		|#211741.sn
+|			|* Correct for Project Reference Date
+|			reference.date =
+|			tipcs.dll0020.read.reference.date.of.project
+|								(g.mitm.cprj)
+|			if reference.date <> 0 and
+|			   reference.date < tibom010.indt then
+|				tibom010.indt = reference.date
+|			endif
+|		endif						|#211741.en
+|	endif
+|}								|#fp8_effd.eo
+|++++ tibom010.ledm - Link with EDM +++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.ledm.is.derived()
+{
+	|* Field is set by EDM to yes otherwise always no.
+	if	not called.by.edm
+	then	return(true)
+	endif
+
+	return(false)
+}
+
+|++++ tibom010.leng - Length ++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.leng.is.applicable()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	if	g.cuni.tccu <> tctccu.length
+		  and	g.cuni.tccu <> tctccu.area
+		then	return(false)
+		endif
+	endif
+
+	return(true)
+}
+
+function extern boolean tibom010.leng.is.valid(long has_changed)
+{
+	if	not has_changed
+	then	return(true)
+	endif
+
+|	calculate.default.nett.quantity()			|#800-134782.o
+
+	return(true)
+}
+
+|++++ tibom010.lsel - Lot Selection +++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.lsel.any.is.applicable()
+{
+	return(true)
+}
+
+function extern boolean tibom010.lsel.same.is.applicable()
+{
+	|* Declaration of local variables.
+|	domain	tcyesno	wms.controlled				|#BR1101765.so
+|	domain	tcyesno	lsel.specific
+|	domain	tcyesno	lsel.same				|#BR1101765.eo
+
+	if	get.subitem.data(tibom010.sitm)
+	then	if	g.sitm.ltct = tcyesno.no
+		  and	tibom010.lsel <> tclsel.any
+		then	dal.set.error.message("tibom010.f",
+		|* Lot selection must be Any for item %1$s, which is not Lot
+		|* Controlled.
+					trim$(tibom010.sitm))
+			return(false)
+		endif
+	endif
+								|#BR1101765.sn
+	|* If warehouse is WMS controlled, check if lsel same is allowed
+	RETIFNOKF(tiint.dllwhwmd.wms.check.same.lot(
+			(isspace(tibom010.cwar)?g.sitm.cwar:tibom010.cwar),
+			tibom010.indt))		| eff. date	|#BR1101765.en
+|	get.wms.controlled.and.lot.selection.from.parameters(	|#BR1101765.so
+|					tibom010.cwar,
+|					wms.controlled,
+|					lsel.specific,
+|					lsel.same)
+|	if	wms.controlled = tcyesno.yes
+|	  and	lsel.same = tcyesno.no
+|	then	dal.set.error.message("tibom010.n", trim$(tibom010.cwar))
+|		|* Warehouse %s: WMS Parameter 'Lot Selection Same in Use'
+|		|* is No. Lot Selection 'Same' not allowed.
+|		return(false)
+|	endif							|#BR1101765.eo
+
+	return(true)
+}
+
+function extern boolean tibom010.lsel.specific.is.applicable()
+{
+	|* Declaration of local variables.
+|	domain	tcyesno	wms.controlled				|#BR1101765.so
+|	domain	tcyesno	lsel.specific
+|	domain	tcyesno	lsel.same				|#BR1101765.eo
+
+	if	get.subitem.data(tibom010.sitm)
+	then	if	g.sitm.ltct = tcyesno.no
+		  and	tibom010.lsel <> tclsel.any
+		then	dal.set.error.message("tibom010.f",
+		|* Lot selection must be Any for item %1$s, which is not Lot
+		|* Controlled.
+					trim$(tibom010.sitm))
+			return(false)
+		endif
+	endif
+								|#800-152535.sn
+	if	tibom010.altp = tcyesno.yes
+	or	tibom010.usup = tcyesno.yes
+	then	return(false)
+	endif
+								|#800-152535.en
+								|#BR1101765.sn
+	|* If warehouse is WMS contr., check if lsel specific is allowed
+	RETIFNOKF(tiint.dllwhwmd.wms.check.specific.lot(
+			(isspace(tibom010.cwar)?g.sitm.cwar:tibom010.cwar),
+			tibom010.indt))		| eff. date	|#BR1101765.en
+|	get.wms.controlled.and.lot.selection.from.parameters(	|#BR1101765.so
+|					tibom010.cwar,
+|					wms.controlled,
+|					lsel.specific,
+|					lsel.same)
+|	if	wms.controlled = tcyesno.yes
+|	  and	lsel.specific = tcyesno.no
+|	then	dal.set.error.message("tibom010.m",
+|					strip$(shiftl$(tibom010.cwar)))
+|		|* Warehouse %s: WMS Parameter 'Lot Selection Specific in Use'
+|		|* is No. Lot Selection 'Specific' not allowed.
+|		return(false)
+|	endif							|#BR1101765.eo
+
+	return(true)
+}
+
+function extern boolean tibom010.lsel.is.derived()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	if	g.sitm.ltct = tcyesno.no
+		then	return(true)
+		endif
+	endif
+
+	return(false)
+}
+
+function extern tibom010.lsel.update()
+{
+	tibom010.lsel = tclsel.any
+}
+
+|++++ tibom010.ltom - Use Lead Time Offset ++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.ltom.is.derived()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	if	g.sitm.osys <> tcosys.mps
+		then	return(true)
+		endif
+	endif
+
+	return(false)
+}
+
+|++++ tibom010.ltou - Lead Time Offset Unit +++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.ltou.is.applicable()
+{
+	if	tibom010.ltom = tcyesno.no
+	then	return(false)
+	else	return(true)
+	endif
+}
+
+function extern boolean tibom010.ltou.is.derived()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	if	g.sitm.osys <> tcosys.mps
+		then	return(true)
+		endif
+	endif
+
+	return(false)
+}
+
+|++++ tibom010.ltov - Lead Time Offset ++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.ltov.is.applicable()
+{
+	if	tibom010.ltom = tcyesno.no
+	then	return(false)
+	else	return(true)
+	endif
+}
+
+function extern boolean tibom010.ltov.is.derived()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	if	g.sitm.osys <> tcosys.mps
+		then	return(true)
+		endif
+	endif
+
+	return(false)
+}
+
+|++++ tibom010.mitm - Main Item +++++++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.mitm.is.valid(long has_changed)
+{
+	|* Declaration of local variables.
+	boolean		tp.project		|* Project is TP-Project.
+	domain	tccprj	project.code		|* Project Code.
+
+	if	not get.main.item.data(tibom010.mitm)
+	then	dal.set.error.message("tibom1110m",
+	|* Item %1$s not found in Item Production Data.
+					trim$(tibom010.mitm))
+		return(false)
+	endif
+								|#LND2-937.sn
+	if not tibom.dll0001.mitm.general.item.is.valid(
+					tibom010.mitm,
+					true) | set message
+	then
+		return(false)
+	endif							|#LND2-937.en
+
+|	if	EQUAL.TO(tiipd001.unom, 0.0)			|#205121.o
+	if	EQUAL.TO(g.mitm.unom, 0.0)			|#205121.n
+	then	dal.set.error.message("tibom1510a",
+	|* BOM cannot be maintained for item %1$s having zero BOM quantity.
+					trim$(tibom010.mitm))
+		return(false)
+	endif
+
+|	if	tiipd001.stoi = tcyesno.yes			|#205121.o
+	if	g.mitm.stoi = tcyesno.yes			|#205121.n
+	then	dal.set.error.message("tibom1110c", trim$(tibom010.mitm))
+	|* Standard-to-order item %1$s cannot have a production BOM.
+		return(false)
+	endif
+
+|	if	not g.mitm.kitm = tckitm.manufacture		|#LND2-937.so
+|	  and	not g.mitm.kitm = tckitm.purchase
+|	then	dal.set.error.message("tibom1110s", trim$(tibom010.mitm))
+|	|* Item type must be Manufactured or Purchased, no BOM can be maintained
+|	|* for item %1$s.
+|		return(false)
+|	endif
+|
+|	if	tcibd001.itmt = tcitmt.tool			|#205121.o
+|	if	g.mitm.itmt = tcitmt.tool			|#205121.n
+|	then	dal.set.error.message("tibom11109",
+|	|* Item %1$s is a tool, cannot be in a BOM.
+|					trim$(tibom010.mitm))
+|		return(false)
+|	endif							|#LND2-937.eo
+
+	if	project.present(tibom010.mitm, project.code)
+	then	if	for.customized.bom(project.code)
+		then	if	tipcs020.kopr = tckopr.main.project
+			then	dal.set.error.message("tibom1110h",
+			|* Project %1$s is a main project, not allowed to
+			|* maintain a BOM.
+					trim$(project.code))
+				return(false)
+			else
+				if	tipcs030.psts > tcpsts.active
+				then	dal.set.error.message("tibom1110i",
+				|* Status of project %1$s is greater than
+				|* Active.
+					trim$(project.code))
+					return(false)
+				endif
+			endif
+		else
+			tipcs020.cprj = project.code
+			tipcs.dll2010.check.known.tp.project(
+					project.code,
+					tp.project)
+			if	tp.project
+			then	dal.set.error.message("tibom1110g",
+			|* Project %1$s is an ERP Enterprise project, cannot
+			|* have a BOM.
+					trim$(project.code))
+				return(false)
+			endif
+		endif
+	endif
+								|#LND2-937.so
+|	if	g.mitm.sayn = tcyesno.yes			|#800-152273.sn
+|	then	dal.set.error.message("tibom010.v",
+|	|* Item "%1$s" is "Subassembly".
+|			trim$(tibom010.mitm))
+|		return(false)
+|	endif							|#800-152273.en
+|								|#FP5_ASSY.sn
+|	if g.mitm.kitm = tckitm.manufacture and			|#LND2-937.so
+|	   g.mitm.srce = tcsrce.assembly then			|#FP7_1ITM.n
+||	   g.mitm.osys = tcosys.fas then			|#FP7_1ITM.o
+|		dal.set.error.message("tibom010.y")
+|		|* Manufactured Assembly items are not allowed in Bill of
+|		|* Material.
+|		return(false)
+|	endif							|#LND2-937.eo
+|								|#FP5_ASSY.en
+|
+|								|#800-172324.sn
+|	if tipcf.dll1000.item.purchased.configurable(tibom010.mitm) then
+|		dal.set.error.message("tiipds0108")
+|		|* Items of type Purchased, Configurable, are not allowed.
+|		return(false)
+|	endif							|#800-172324.en
+								|#LND2-937.eo
+							|##itemSecurity.sn
+	if has_changed <> 0 then				|#800-208256.n
+
+		RETIFNOKF(tiint.dlltcsec.item.security.check.modify.allowed(
+			tibom010.mitm))
+	endif							|#800-208256.n
+							|##itemSecurity.en
+
+	return(true)
+}
+
+function extern long tibom010.mitm.filter(ref string o.select(),
+					  ref string o.from(),
+					  ref string o.where())
+{
+|	o.select = "tcibd001.kitm, tcibd001.itmt, ticbd001.cnfg"|#800-172856.o
+	o.select = "tcibd001.kitm, tcibd001.itmt, tcibd001.cnfg"|#800-172856.n
+|	o.from   = "tcibd001"					|#800-144199.o
+|								|#800-172856.so
+|	o.from   = "tcibd001, tipcs020"				|#800-144199.n
+|								|#800-172856.eo
+	o.from	= "tcibd001"					|#800-172856.n
+	o.where = "((tcibd001.kitm = tckitm.manufacture) or  " &
+		   " (tcibd001.kitm = tckitm.purchase and " &
+		   "  tcibd001.cnfg = tcyesno.no)) and " &	|#lnd2-10125.n
+								|#lnd2-10125.so
+|		   "  tcibd001.cnfg = tcyesno.no and " &	|#FP7_CONF.n
+|		   "  tcibd001.itmt <> tcitmt.tool))    and " &	|#lnd2-10125.eo
+		   " tiipd001.unom <> 0.0 and "  &
+		   " tiipd001.stoi = tcyesno.no  and " &
+		   " (tcibd001.cprj = """" or " &
+		   "  exists(select tipcs020.* from tipcs020 "& |#800-172856.sn
+		   	  "  where tipcs020._index1 = {tcibd001.cprj} and " &
+		   	  "  tipcs020.kopr = tckopr.budget) or " &
+		   "  exists(select tipcs020.* from tipcs020, tipcs030 " &
+		   	  "  where tipcs020._index1 = {tcibd001.cprj} and" &
+		   	  "  tipcs020.kopr <> tckopr.budget and "&
+			  "  tipcs030.cprj = tipcs020.cprj))"	|#1465701.n
+|			  "  tipcs030.cprj = tipcs020.cprj and "|#1465701.so
+|		   	  "  tipcs030.psts <= tcpsts.active))"	|#800-172856.en
+|								|#1465701.eo
+|								|#800-172856.so
+|		   "  tipcs020.cprj = tcibd001.cprj and " &	|#800-144199.sn
+|		   "  (tipcs020.kopr = tckopr.budget or " & 	|#800-144199.en
+|		   "  (exists (select tipcs030.* from tipcs030 " &
+|		   "           where  tipcs030._index1 = {tcibd001.cprj} " &
+|		   						|#800-144199.so
+||		   "           and    tipcs030.psts <= tcpsts.active)))"
+|								|#800-144199.eo
+|								|#800-144199.sn
+|		   "           and    tipcs030.psts <= tcpsts.active))))"
+|		   						|#800-144199.en
+|								|#800-172856.eo
+	return(0)
+}
+
+function extern long tibom010.mitm.cprj.filter(	ref	string	o.select(),
+						ref	string 	o.from(),
+						ref	string	o.where())
+{
+	o.from = "tipcs030"
+	o.where = "tipcs020.cprj refers to tipcs030 and " &
+		  "(tipcs020.kopr <> tckopr.main.project or "&	|#1465701.n
+|								|#1465701.so
+|		  "((tipcs020.kopr <> tckopr.main.project and " &
+|		  "tipcs030.psts <= tcpsts.active) or "	  &	|#1465701.eo
+		  " (exists (select tipcs040.* from tipcs040 " &
+		   "           where  tipcs040._index1 = {tipcs020.cprj})))"
+
+	return(0)
+}
+
+|++++ tibom010.mrou - Machine - Routing Relationships +++++++++++++++++++++++++
+
+	|* No Check.
+
+|++++ tibom010.noun - Number of Units +++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.noun.is.applicable()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	if	g.cuni.tccu <> tctccu.length
+		  and	g.cuni.tccu <> tctccu.area
+		then
+								|#LND-9378.sn
+			dal.set.error.message("tibom1110t",
+			|* %1$s is not allowed because the %2$s of Unit %3$s of
+			|* sub item %4$s equals %5$s
+				  tt.field.desc("tibom010.noun"),
+				  tt.field.desc("tcmcs001.tccu"),
+				  trim$(bom010.sitm.cuni),
+				  trim$(tibom010.sitm),
+				  enum.descr$("tctccu", g.cuni.tccu))
+								|#LND-9378.en
+			return(false)
+		endif
+	endif
+
+	return(true)
+}
+
+function extern boolean tibom010.noun.is.valid(long has_changed)
+{
+	if	not has_changed
+	then	return(true)
+	endif
+
+|	calculate.default.nett.quantity()			|#800-134782.o
+
+	return(true)
+}
+
+function extern void tibom010.noun.update()			|#223843.sn
+{
+	if	tibom010.noun = 0
+	  and	(GREATER.THAN(tibom010.leng, 0.0)
+	  	or	GREATER.THAN(tibom010.widt, 0.0))
+	then	tibom010.noun = 1
+	endif
+}								|#223843.en
+
+|++++ tibom010.opno - Operation +++++++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.opno.is.applicable()
+{
+	if	tibom010.mrou = tcyesno.yes
+	then	dal.set.error.message("tibom010.o",
+	|* Material-routing relationship exists for BOM line %1$s. %2$d, %3$d
+	|* Operation number must be zero.
+					trim$(tibom010.mitm),
+					tibom010.pono,
+					tibom010.seqn)
+		return(false)
+	endif
+
+	return(true)
+}
+
+|++++ tibom010.pdoc - Print On Order Document +++++++++++++++++++++++++++++++++
+
+	|* No checks.
+
+|++++ tibom010.phst - Use Phantom Inventory++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.phst.is.applicable()
+{
+	if	tibom010.cpha = tcyesno.no
+	then
+								|#LND-9378.sn
+		dal.set.error.message("tibom1110u",
+		|* %1$s is not allowed because sub item %2$s is not phantom
+				tt.field.desc("tibom010.phst"),
+				trim$(tibom010.sitm))
+								|#LND-9378.en
+		return(false)
+	else
+		return(true)
+	endif
+}
+
+function extern tibom010.phst.update()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	tibom010.phst = g.sitm.phst
+	endif
+}
+
+|++++ tibom010.pono - Position ++++++++++++++++++++++++++++++++++++++++++++++++
+
+function extern tibom010.pono.update()
+{
+	ret = search.last.used.position.number(
+					tibom010.mitm,
+					tibom010.pono)
+}
+
+|++++ tibom010.preq - Percentage Required +++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.preq.is.never.applicable()
+{
+	if	tccom000.schi = tcyesno.no
+	then	dal.set.error.message("tibomd010.01")
+	|* Infor SCM Scheduler is not implemented. The minimum percentage
+	|* required is not allowed.
+		return(true)
+	endif
+
+	return(false)
+}
+|						|#SCH_LN.sn	|#245555.so
+|function extern boolean tibom010.preq.is.mandatory()
+|{
+|	if	tccom000.schi = tcyesno.yes
+|	then	return(true)
+|	endif
+|
+|	return(false)
+|}
+|						|#SCH_LN.en	|#245555.eo
+|function extern boolean tibom010.preq.is.valid(long has_changed) |#1389596.so
+|{
+|	if	has_changed
+|	  and	tccom000.schi = tcyesno.no
+||	  and	tibom010.preq > 0				|#SCH_LN.o
+|	then	dal.set.error.message("tibomd010.01")
+|	|* Infor SCM Scheduler is not implemented. The minimum percentage
+|	|* required is not allowed.
+|		return(false)
+|	endif
+|
+|	return(true)
+|}								|#1389596.eo
+
+function void tibom010.preq.object.default()
+{
+	if	tccom000.schi = tcyesno.yes
+	then	tibom010.preq = 100.0
+	endif
+}
+
+|++++ tibom010.qana - Net Quantity ++++++++++++++++++++++++++++++++++++++++++++
+
+function extern tibom010.qana.update()
+{
+	DllUsage						|#1342940.sn
+	Expl:	The purpose of this function is to set a default value
+		for tibom010.qana.
+		Pre: Fields that are used to set the default are:
+			- tibom010.sitm
+			- tibom010.leng
+			- tibom010.widt
+			- tibom010.noun
+                Post:	tibom010.qana could be filled or modified
+                Input:	N.A.
+                Output:	N.A.
+                Return:	N.A.
+	EndDllUsage						|#1342940.en
+
+	calculate.default.nett.quantity()
+}
+
+function extern long tibom010.qana.make.valid()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	tibom010.qana = tccom.dll0007.qty.domain.round(
+					tibom010.qana,
+					domainof(tibom010.qana),
+					bom010.sitm.cuni)
+	endif
+
+	return(0)
+}
+
+|						|#216243.sn	|#221019.so
+|function extern boolean tibom010.qana.is.valid(long has_changed)
+|{
+|
+|	if has_changed and tibom010.cpha = tcyesno.yes and
+|	   LESS.THAN(tibom010.qana, 0.0) then
+|		dal.set.error.message("tibom010.j")
+|		|* Negative Quantity for Phantom Material not allowed
+|	   return(false)
+|	endif
+|	return(true)
+|}
+|						|#216243.en	|#221019.eo
+
+|++++ tibom010.rdsp - Reference Designators Present +++++++++++++++++++++++++++
+								|#SL149757.sn
+function extern boolean tibom010.rdsp.is.never.applicable()
+{
+	if	tccom000.rdes <> tcyesno.yes
+	then	return(true)
+	else	return(false)
+	endif
+}
+								|#SL149757.en
+|++++ tibom010.scpf - Scrap Factor ++++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.scpf.is.applicable()
+{
+	if	LESS.THAN(tibom010.qana, 0.0)
+	then	dal.set.error.message("tibom1110a3")
+	|* Scrap factor cannot be specified, if net quantity is negative.
+		return(false)
+	else	return(true)
+	endif
+}
+
+function extern tibom010.scpf.update()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	tibom010.scpf = g.sitm.scpf
+	endif
+}
+
+|++++ tibom010.scpq - Scrap Quantity ++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.scpq.is.applicable()
+{
+	if	LESS.THAN(tibom010.qana, 0.0)
+	then	dal.set.error.message("tibom1110a2")
+	|* Scrap quantity cannot be specified when net quantity is negative.
+		return(false)
+	endif
+
+	return(true)
+}
+
+function extern tibom010.scpq.update()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	tibom010.scpq = g.sitm.scpq
+	endif
+}
+
+function extern long tibom010.scpq.make.valid()
+{
+	if	get.subitem.data(tibom010.sitm)
+	then	tibom010.scpq = tccom.dll0007.qty.domain.round(
+					tibom010.scpq,
+					domainof(tibom010.scpq),
+					bom010.sitm.cuni)
+	endif
+
+	return(0)
+}
+
+|++++ tibom010.scro - Routing Scrap Aggregated Planning +++++++++++++++++++++++
+
+	|* No check.
+
+|++++ tibom010.seqn - Sequence Number +++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.seqn.is.valid(long has_changed)
+{
+	|* Declaration of local variables.
+	boolean		already.exists		|* Already Exists.
+	boolean		linked.to.co		|* Linked to Change Management.
+
+	if	not has_changed
+	then	return(true)
+	endif
+
+	if	tccom000.odmu = tcyesno.yes
+|	  and	tcibd001.chma = tcyesno.yes			|#205121.o
+	  and	g.mitm.chma = tcyesno.yes			|#205121.n
+	then	if	has_changed = DAL_NEW
+		then	with.object.set.do(sequence.linked.to.co,
+					1,
+					linked.to.co)
+			if	linked.to.co
+			then	return(false)
+			endif
+		endif
+		with.object.set.do(another.sequence.linked.to.co,
+					linked.to.co)
+		if	linked.to.co
+		then	return(false)
+		endif
+	endif
+
+	if	has_changed = DAL_NEW
+	then	already.exists = false
+		with.object.set.do(sequence.number.already.exists.for.position,
+					tibom010.mitm,
+					tibom010.pono,
+					tibom010.seqn,
+					already.exists)
+		if	already.exists
+		then	return(false)
+		endif
+	endif
+
+	return(true)
+}
+
+function extern tibom010.seqn.update()
+{
+	dummy.ret.val = search.for.next.serial.number(
+					tibom010.mitm,
+					tibom010.pono,
+					tibom010.seqn)
+}
+
+|++++ tibom010.sitm - Item ++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.sitm.is.valid(long has_changed)
+{
+	domain	tccprj	mitm.project		|* Project Code Main Item.
+	domain	tccprj	sitm.project		|* Project Code	Sub Item.
+	domain	tccpva	mitm.prod.variant	|* Product Variant.
+								|#800-150558.sn
+	domain	tcalpr	altm.priority		|* Priority of alternative item.
+								|#800-150558.en
+
+	if	not has_changed
+	then	return(true)
+	endif
+
+	if	tibom010.sitm = tibom010.mitm
+	then	dal.set.error.message("tibom11104", trim$(tibom010.sitm))
+	|* Subitem %1$s cannot be same as main item.
+		return(false)
+	endif
+
+	if	not get.subitem.data(tibom010.sitm)
+	then	dal.set.error.message("tibom1110l", trim$(tibom010.sitm))
+	|* Item %1$s not found in Item General Data.
+		return(false)
+	endif
+
+								|#LND2-937.sn
+	if not tibom.dll0001.sitm.general.item.is.valid(
+					tibom010.sitm,
+					true) | set message
+	then
+		return(false)
+	endif							|#LND2-937.en
+
+|	if	not g.sitm.kitm = tckitm.manufacture		|#LND2-937.so
+|	  and	not g.sitm.kitm = tckitm.purchase
+|	then	dal.set.error.message("tibom11102", trim$(tibom010.sitm))
+|	|* Item type of item %1$s must be Purchased or Manufactured.
+|		return(false)
+|	endif
+|
+|	if	g.sitm.itmt = tcitmt.tool
+|	then	dal.set.error.message("tibom11109", trim$(tibom010.sitm))
+|	|* Item %1$s is a tool, cannot be in a BOM.
+|		return(false)
+|	endif							|#LND2-937.eo
+
+	if	g.cuni.tccu = tctccu.time
+	then	dal.set.error.message("tibom1110zz",
+	|* Component %1$s with inventory unit of physical quantity=time not
+	|* allowed.
+|								|#800-163209.so
+|					shiftl$(strip$(tibom010.mitm)))
+|								|#800-163209.eo
+					trim$(tibom010.sitm))	|#800-163209.n
+		return(false)
+	endif
+
+	if	project.present(tibom010.sitm, sitm.project)
+	then	if	not project.present(tibom010.mitm, mitm.project)
+		then	dal.set.error.message("tibom1110d",
+		|* Main item %1$s is standard item, cannot have customized
+		|* component %2$s.
+					trim$(tibom010.mitm),
+					trim$(tibom010.sitm))
+			return(false)
+		else	if	not isspace(sitm.project)
+			  and	sitm.project <> mitm.project
+			then	dal.set.error.message("tibom1110j",
+			|* Project of sub item %1$s must be the same as project
+			|* of main item %2$s.
+					trim$(sitm.project),
+					trim$(mitm.project))
+				return(false)
+			endif
+		endif
+	else	mitm.prod.variant = tcibd.dll0001.read.product.variant.of.item(
+					tibom010.mitm)
+		if	mitm.prod.variant <> g.sitm.cpva
+		  and	g.sitm.cpva <> 0
+		then	dal.set.error.message("tibomt0101")
+		|* Product Variant of Sub-item is not equal to Product Variant
+		|* of Main Item.
+			return(false)
+		endif
+	endif
+
+								|#800-150558.sn
+	if	tibom010.altp = tcyesno.yes
+	or	tibom010.usup = tcyesno.yes
+	then
+		if	item.already.used.as.alternative(
+				tibom010.mitm,
+				tibom010.pono,
+				tibom010.seqn,
+				tibom010.sitm,
+				altm.priority)
+		then	dal.set.error.message(
+					"tibom0501",
+					|* Item %1$s already used as alternative
+					|* for priority %2$s.
+					trim$(tibom010.sitm),
+					enum.descr$(domainof(altm.priority),
+					altm.priority))
+			return(false)
+		endif
+		with.old.object.values.do(get.prev.sub.item)
+		if	tcibd.dll0001.item.customized(sitm.prev)
+		and	not tcibd.dll0001.item.customized(tibom010.sitm)
+		and	customized.alternatives.present(
+				tibom010.mitm,
+				tibom010.pono,
+				tibom010.seqn)
+		then	dal.set.error.message("tibom010.u")
+		|* Customized items present as alternative or use up item.
+		|* Cannot change to standard item.
+			return(false)
+		endif
+	endif
+								|#800-150558.en
+|								|#LND2-937.so
+|	if	g.sitm.sayn = tcyesno.yes			|#800-152273.sn
+|	then	dal.set.error.message("tibom010.v",
+|	|* Item "%1$s" is "Subassembly".
+|			trim$(tibom010.sitm))
+|		return(false)
+|	endif							|#800-152273.en
+|								|#FP5_ASSY.sn
+||	if g.sitm.osys = tcosys.fas and				|#FP7_1ITM.so
+||	   g.sitm.kitm = tckitm.manufacture then		|#FP7_1ITM.eo
+|	if g.sitm.srce = tcsrce.assembly then			|#FP7_1ITM.n
+|		dal.set.error.message("tibom010.y")
+|		|* Manufactured Assembly items are not allowed in Bill of
+|		|* Material.
+|		return(false)
+|	endif
+|								|#FP5_ASSY.en
+|								|#800-172324.sn
+|	if tipcf.dll1000.item.purchased.configurable(tibom010.sitm) then
+|		dal.set.error.message("tiipds0108")
+|		|* Items of type Purchased, Configurable, are not allowed.
+|		return(false)
+|	endif							|#800-172324.en
+								|#LND2-937.eo
+								|#800-182197.sn
+	if tiint.dlltcibd.item.project.peg.mandatory(
+					tibom010.sitm,
+					false) then		|* i.force.read
+		if project.present(tibom010.mitm, mitm.project) then
+			dal.set.error.message("tibom010.l",
+			|* Mandatory Project Pegged Subitem %1$s cannot be
+			|* linked to the customized main item %2$s.
+					trim$(tibom010.sitm),
+					trim$(tibom010.mitm))
+			return(false)
+		endif
+		if not tiint.dlltcibd.item.project.peg.mandatory(
+					tibom010.mitm,
+					false) then		|* i.force.read
+			dal.set.error.message("tibom010.l1",
+			|* Mandatory Project Pegged Subitem %1$s cannot be
+			|* linked to the non-project pegged main item %2$s.
+					trim$(tibom010.sitm),
+					trim$(tibom010.mitm))
+			return(false)
+		endif
+	endif
+								|#800-182197.en
+							|##itemSecurity.sn
+	RETIFNOKF(tiint.dlltcsec.item.security.check.use.allowed(
+		  tibom010.sitm))			|##itemSecurity.en
+	return(true)
+}
+
+function extern	long tibom010.sitm.filter(ref	string	o.select(),
+					  ref	string	o.from(),
+					  ref	string	o.where())
+{
+	dummy.ret.val = tcibd.dll0010.segment.size(
+					tcibd.apco.project,
+					start.pos,
+					end.pos)
+	|* handle "No segment defined for tcibd.apco.project(Project segment)
+	|* in Segmentation parameters" (tcibd000)
+	if start.pos < 0 then
+		o.where =
+|		   "(tcibd001.kitm = tckitm.manufacture " &	|#FP7_1ITM.o
+		   "((tcibd001.kitm = tckitm.manufacture " &	|#FP7_1ITM.sn
+		   " and tcibd001.srce <> tcsrce.assembly)" &	|#FP7_1ITM.en
+		   " or  (tcibd001.kitm = tckitm.purchase " &
+		   " and tcibd001.cnfg = tcyesno.no)) " &	|#lnd2-10125.n
+								|#lnd2-10125.so
+|		   " and tcibd001.cnfg = tcyesno.no " &	|#FP7_CONF.n
+|		   " and tcibd001.itmt <> tcitmt.tool))" &	|#lnd2-10125.eo
+|		   " and tcibd001.item <> """&(tibom010.mitm)&"""" &
+								|#106-117168.so
+|		   " and tcibd001._index1 <> {"""&(tibom010.mitm)&"""}" &
+								|#106-117168.eo
+								|#106-117168.sn
+ 		 " and tcibd001._index1 <> {"&quoted.string(tibom010.mitm)&"}" &
+								|#106-117168.en
+		   " and tcibd001.sayn = tcyesno.no " &		|#800-177482.n
+|		   " and (tcibd001.cprj = '')"
+		   " and (tcibd001._index9 = {''})"
+	else
+		end.pos = end.pos - start.pos + 1
+		o.where =
+|		   "(tcibd001.kitm = tckitm.manufacture " &	|#FP7_1ITM.o
+		   "((tcibd001.kitm = tckitm.manufacture " &	|#FP7_1ITM.sn
+		   " and tcibd001.srce <> tcsrce.assembly)" &	|#FP7_1ITM.en
+		   " or  (tcibd001.kitm = tckitm.purchase " &
+		   " and tcibd001.cnfg = tcyesno.no)) " &	|#lnd2-10125.n
+								|#lnd2-10125.so
+|		   " and tcibd001.cnfg = tcyesno.no " &	|#FP7_CONF.n
+|		   " and tcibd001.itmt <> tcitmt.tool))" &	|#lnd2-10125.eo
+								|#106-117168.so
+|		   " and tcibd001._index1 <> {"""&(tibom010.mitm)&"""}" &
+								|#106-117168.eo
+								|#106-117168.sn
+ 		 " and tcibd001._index1 <> {"&quoted.string(tibom010.mitm)&"}" &
+								|#106-117168.en
+		   " and tcibd001.sayn = tcyesno.no " &		|#800-177482.n
+		   " and (tcibd001._index9 = {''} or " &
+|		   " tcibd001.cprj = """&
+|		     tibom010.mitm(start.pos; end.pos) & """)"
+		   " tcibd001._index9 = {"""&
+		     tibom010.mitm(start.pos; end.pos) & """})"
+	endif
+
+	return(0)
+}
+
+function extern long tibom010.sitm.cprj.filter(ref string  o.select(),
+						ref string  o.from(),
+						ref string  o.where())
+{
+								|#800-151708.sn
+	|* Declaration of local variables.
+	domain	tccprj	project.segment		|* Project Segment.
+								|#800-151708.en
+	o.where = "tipcs020.cprj = """
+|								|#800-151708.so
+|	if	tcibd.dll0010.segment.size(
+|					tcibd.apco.project,
+|					start.pos,
+|					end.pos)
+|	then	end.pos = end.pos - start.pos + 1
+|		o.where = "tipcs020.cprj = """&
+|		   tibom010.mitm(start.pos; end.pos)& """"
+|	endif
+|								|#800-151708.eo
+								|#800-151708.sn
+	if	tcibd.dll0010.determine.segment(
+					tibom010.mitm,
+					tcibd.apco.project,
+					project.segment) = 0
+	then	o.where = "tipcs020.cprj = " & quoted.string(project.segment)
+	endif
+
+								|#800-151708.en
+
+	return(0)
+}
+
+								|#800-150558.sn
+function boolean item.already.used.as.alternative(
+						domain	tcitem	i.main.item,
+						domain	tcpono	i.position,
+						domain	tcsern	i.sequence,
+						domain	tcitem	i.sub.item,
+					ref	domain	tcalpr	o.priority)
+{
+	select	tibom050.prio:o.priority
+	from	tibom050
+	where	tibom050._index1 = {:i.main.item,
+				    :i.position,
+				    :i.sequence}
+	and	tibom050.aitm = :i.sub.item
+	as set with 1 rows
+	selectdo
+		return(true)
+	endselect
+
+	return(false)
+}
+
+function get.prev.sub.item()
+{
+	sitm.prev = tibom010.sitm
+}
+
+function boolean customized.alternatives.present(
+						domain	tcitem	i.main.item,
+						domain	tcpono	i.position,
+						domain	tcsern	i.sequence)
+{
+	domain	tcitem	alternative.item
+
+	select	tibom050.aitm:alternative.item
+	from	tibom050
+	where	tibom050._index1 = {:i.main.item,
+				    :i.position,
+				    :i.sequence}
+	selectdo
+		if	tcibd.dll0001.item.customized(alternative.item)
+		then	return(true)
+		endif
+	endselect
+
+	return(false)
+}
+
+								|#800-150558.en
+
+|++++ tibom010.stcf - Standard Configuration ++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.stcf.is.never.applicable()
+{
+	if	tccom000.unef = tcyesno.no
+	then	return(true)
+	endif
+
+	return(false)
+}
+
+function extern boolean tibom010.stcf.yes.is.applicable()	|#800-170071.sn
+{
+	return(true)
+}
+
+function extern boolean tibom010.stcf.no.is.applicable()
+{
+	if (not called.by.edm) and
+	   tibom010.unef = tcyesno.no then
+		dal.set.error.message("tibom1110r",
+		|* Exceptions must be defined for Non Standard Configuration.
+		|* (BOM line %1$s, %2$d, %3$d).
+					trim$(tibom010.mitm),
+					tibom010.pono,
+					tibom010.seqn)
+		return(false)
+	endif
+
+	return(true)
+}								|#800-170071.en
+
+|function extern boolean tibom010.stcf.is.valid(long has_changed)|#800-170071.so
+|{
+|	if	has_changed <> 0
+|	then	if	tibom010.stcf = tcyesno.no
+|		  and	tibom010.unef = tcyesno.no
+|		then	dal.set.error.message("tibom1110r",
+|		|* Exceptions must be defined for Non Standard Configuration.
+|		|* (BOM line %1$s, %2$d, %3$d).
+|					shiftl$(strip$(tibom010.mitm)),
+|					tibom010.pono,
+|					tibom010.seqn)
+|			return(false)
+|		endif
+|	endif
+|
+|	return(true)
+|}								|#800-170071.eo
+
+|++++ tibom010.txta - Text ++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	|* No checks.
+
+|++++ tibom010.unef - Exceptions Present ++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.unef.is.never.applicable()
+{
+	if	tccom000.unef = tcyesno.no
+	then	return(true)
+	endif
+
+	return(false)
+}
+
+|++++ tibom010.widt - Width +++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function extern boolean tibom010.widt.is.applicable()
+{
+	if get.subitem.data(tibom010.sitm) then
+		if g.cuni.tccu <> tctccu.area then
+								|#LND-9378.sn
+			dal.set.error.message("tibom1110t",
+			|* %1$s is not allowed because the %2$s of Unit %3$s of
+			|* sub item %4$s equals %5$s
+				  tt.field.desc("tibom010.widt"),
+				  tt.field.desc("tcmcs001.tccu"),
+				  trim$(bom010.sitm.cuni),
+				  trim$(tibom010.sitm),
+				  enum.descr$("tctccu", g.cuni.tccu))
+			return(false)
+								|#LND-9378.en
+		endif
+	endif
+
+	return(true)
+}
+
+function extern boolean tibom010.widt.is.valid(long has_changed)
+{
+	if	not has_changed
+	then	return(true)
+	endif
+
+|	calculate.default.nett.quantity()			|#800-134782.o
+
+	return(true)
+}
+
+|++++ tibom010.yldo - Yield for Aggregated Planning +++++++++++++++++++++++++++
+
+function extern boolean tibom010.yldo.is.mandatory(long  has_changed)
+{
+	dal.set.error.message("tibom1110k")
+	|* Yield for Fixed Lead Time offsetting cannot be zero.
+	return(true)
+}
+
+								|#229251.sn
+								|#LND-4707.so
+||++++ tibom010.ifmi - Combined Ownership ++++++++++++++++++++++++++++++++++++++
+								|#LND-4707.eo
+								|#LND-4707.sn
+|++++ tibom010.ifmi - Contains Customer Furnished Material ++++++++++++++++++++
+
+function extern boolean tibom010.ifmi.is.never.applicable()	|#800-187561.sn
+{								|#lnd-9664.sn
+	|* Customer furnished can only be set in BOM when CFM is implemented
+	if tccom000.smfs = tcyesno.no then
+		dal.set.error.message("tcibds0268",
+		|* %1$s is not allowed, because %2$s is not implemented in
+		|* company parameters.
+			tt.field.desc("tibom010.ifmi"),
+			tt.field.desc("tccom000.smfs")
+			)
+		return(true)
+	endif							|#lnd-9664.en
+
+|	|* Customer furnished can only be set in BOM when	|#lnd-9664.so
+|	|* demand pegging is implemented.
+|	if tccom000.alhp = tcyesno.no then
+|		dal.set.error.message("tcibds0268",
+|		|* %1$s is not allowed, because %2$s is not implemented in
+|		|* company parameters.
+|			tt.field.desc("tibom010.ifmi"),
+|			tt.field.desc("tccom000.alhp")
+|			)
+|		return(true)
+|	endif							|#lnd-9664.eo
+
+	return(false)
+}								|#800-187561.en
+
+|function extern boolean tibom010.ifmi.is.applicable()		|#lnd-9664.so
+|{
+|	if tibom010.hppr = tchppr.not.propagate or
+|	   tibom010.icfm = tcyesno.yes or
+|	   tibom010.sbsr = tcyesno.yes then
+|		return(false)
+|	endif
+|
+|	return(true)
+|}								|#lnd-9664.eo
+
+function extern boolean tibom010.ifmi.yes.is.applicable()
+{
+|	if (tibom010.hppr = tchppr.propagate or			|#800-188057.so
+|	    tibom010.hppr = tchppr.read.terms) and		|#800-188057.eo
+|	if tibom010.hppr = tchppr.propagate and			|#lnd-9664.so
+|	   tibom010.sbsr = tcyesno.no then			|#lnd-9664.eo
+
+	if 	tibom010.sbsr = tcyesno.no			|#lnd-9664.sn
+	  and	tibom010.icfm = tcyesno.no
+	  and	get.subitem.data(tibom010.sitm, tibom010.indt,	|#lnd2-3406.sn
+	  			 		tibom010.exdt)	|#lnd2-3406.en
+	then							|#lnd-9664.en
+		if g.sitm.srce = tcsrce.repetitive then		|#lnd2-3406.sn
+		       dal.set.error.message("tibom1110w", trim$(tibom010.sitm))
+			|* Customer Furnished not allowed for component
+			|* %1$s with supply source Repetitive
+			return(false)
+		endif						|#lnd2-3406.en
+		return(true)
+	endif
+
+	return(false)
+}
+
+function extern boolean tibom010.ifmi.no.is.applicable()
+{
+	return(true)
+}
+								|#LND-4707.en
+								|#LND-4707.so
+|function extern tibom010.ifmi.update()
+|{
+|	if	get.subitem.data(tibom010.sitm)
+|	then	tibom010.ifmi = g.sitm.ifmi
+|	endif
+|}
+								|#LND-4707.eo
+								|#LND-4707.sn
+|++++ tibom010.icfm - Customer Furnished Material +++++++++++++++++++++++++++++
+
+function extern boolean tibom010.icfm.is.never.applicable()	|#800-187561.sn
+{
+								|#lnd-9664.sn
+	|* Customer furnished can only be set in BOM when CFM is implemented.
+	if tccom000.smfs = tcyesno.no then
+		dal.set.error.message("tcibds0268",
+		|* %1$s is not allowed, because %2$s is not implemented in
+		|* company parameters.
+			tt.field.desc("tibom010.icfm"),
+			tt.field.desc("tccom000.smfs")
+			)
+		return(true)
+	endif							|#lnd-9664.en
+
+|	|* Customer furnished can only be set in BOM when	|#lnd-9664.so
+|	|* demand pegging is implemented.
+|	if tccom000.alhp = tcyesno.no then
+|		dal.set.error.message("tcibds0268",
+|		|* %1$s is not allowed, because %2$s is not implemented in
+|		|* company parameters.
+|			tt.field.desc("tibom010.icfm"),
+|			tt.field.desc("tccom000.alhp")
+|			)
+|		return(true)
+|	endif							|#lnd-9664.eo
+
+	return(false)
+}								|#800-187561.en
+
+|function extern boolean tibom010.icfm.is.applicable()		|#lnd-9664.so
+|{
+|	if tibom010.hppr = tchppr.not.propagate or
+|	   tibom010.ifmi = tcyesno.yes or
+|	   tibom010.sbsr = tcyesno.yes then
+|		return(false)
+|	endif
+|
+|	return(true)
+|}								|#lnd-9664.eo
+
+function extern boolean tibom010.icfm.yes.is.applicable()
+{
+|	if (tibom010.hppr = tchppr.propagate or			|#800-188057.so
+|	    tibom010.hppr = tchppr.read.terms) and		|#800-188057.eo
+|	if tibom010.hppr = tchppr.propagate and			|#lnd-9664.so
+|   	   tibom010.sbsr = tcyesno.no then			|#lnd-9664.eo
+
+	if 	tibom010.sbsr = tcyesno.no 			|#lnd-9664.sn
+	  and	tibom010.ifmi = tcyesno.no
+	  and	get.subitem.data(tibom010.sitm, tibom010.indt,	|#lnd2-3406.sn
+	  					tibom010.exdt)	|#lnd2-3406.en
+	then							|#lnd-9664.en
+		if g.sitm.srce = tcsrce.repetitive then		|#lnd2-3406.sn
+		       dal.set.error.message("tibom1110w", trim$(tibom010.sitm))
+			|* Customer Furnished not allowed for component
+			|* %1$s with supply source Repetitive
+			return(false)
+		endif						|#lnd2-3406.en
+		return(true)
+	endif
+
+	return(false)
+}
+
+function extern boolean tibom010.icfm.no.is.applicable()
+{
+	return(true)
+}
+								|#LND-4707.en
+								|#229251.en
+								|#800-171954.sn
+|++++ tibom010.exin - Extra Information +++++++++++++++++++++++++++++++++++++++
+
+function extern tibom010.exin.update(
+		long			mode)
+{
+	if	mode = DAL_NEW
+		and not called.by.edm
+		and not copy.activated
+		and get.subitem.data(tibom010.sitm)
+	then
+		tibom010.exin = g.sitm.exin
+	endif
+}								|#800-171954.en
+								|#LND-4097.sn
+								|#800-194964.so
+||++++ tibom010.hppr - Inherit Demand Peg ++++++++++++++++++++++++++++++++++++++
+								|#800-194964.eo
+								|#800-194964.sn
+|++++ tibom010.idpg - Inherit Demand Peg ++++++++++++++++++++++++++++++++++++++
+								|#800-194964.en
+
+|function extern boolean tibom010.hppr.is.never.applicable()	|#800-194964.o
+function extern boolean tibom010.idpg.is.never.applicable()	|#800-194964.n
+{
+	if tccom000.alhp = tcyesno.no then
+		dal.set.error.message("tcibds0268",
+		|* %1$s is not allowed, because %2$s is not implemented in
+		|* company parameters.
+|			tt.field.desc("tibom010.hppr"),		|#800-194964.o
+			tt.field.desc("tibom010.idpg"),		|#800-194964.n
+			tt.field.desc("tccom000.alhp")
+			)
+		return(true)
+	endif
+
+	return(false)
+}
+
+
+								|#800-194964.so
+|function extern boolean tibom010.hppr.not.propagate.is.applicable()
+								|#800-194964.eo
+								|#800-194964.sn
+function extern boolean tibom010.idpg.tcyesno.no.is.applicable()
+								|#800-194964.en
+{
+	return(true)
+}
+
+								|#800-194964.so
+|function extern boolean tibom010.hppr.propagate.is.applicable()
+								|#800-194964.eo
+								|#800-194964.sn
+function extern boolean tibom010.idpg.tcyesno.yes.is.applicable()
+								|#800-194964.en
+{
+	return(true)
+}
+								|#800-194964.so
+|function extern boolean tibom010.hppr.read.terms.is.applicable()
+|{
+||	if tccom000.smfs = tcyesno.no then			|#800-188057.so
+||		return(false)
+||	endif
+||
+||	return(true)						|#800-188057.eo
+|	|* made obsolete
+|	return(false)						|#800-188057.n
+|}								|#800-194964.eo
+
+								|#LND-4097.en
+
+|**** Business Methods ********************************************************
+								|#800-168310.so
+|function extern boolean project.greater.than.active(domain tcitem i.item)
+								|#800-168310.eo
+|								|#1672403.so
+|function extern	long	project.greater.than.active(		|#800-168310.sn
+|					domain	tcitem	i.item,
+|				ref	boolean		o.greater.active)
+|								|#800-168310.en
+|{
+|	DllUsage
+|	Expl.	: This function checks whether the status is greater than
+|		  status Active.
+|	Pre	: -
+|	Post	: Project-record (pcs030) is read (all fields).
+|	Input	: i.item	- Item for which the project is checked.
+|	Output	: o.greater.active true/false			|#800-168310.n
+|	Return	: True	- Project Status is greater than Active.
+|		  False	- Project Status is not greater than Active.
+|	EndDllUsage
+|
+|	|* Declaration of local variables.
+|		domain	tcncmp	current.company	|* Current Company.
+|		domain	tccprj	project.code	|* Project Code.
+|	static	domain	tcncmp	hold.company	|* Hold Company.
+|	static	boolean		hold.gt.active	|* Hold Greater than Active.
+|	static	domain	tcitem	hold.item	|* Hold Item.
+|
+|	current.company =  get.compnr()
+|	if	hold.item <> i.item
+|	 or	hold.company <> current.company
+|	then	hold.gt.active = false
+|		if	project.present(i.item,
+|					project.code)
+|		then	select  tipcs030.*
+|			from	tipcs030
+|			where	tipcs030._index1 = {:project.code}
+|			and	tipcs030.psts > tcpsts.active
+|			as set with 1 rows
+|			selectdo
+|				hold.gt.active = true
+|			endselect
+|		endif
+|		hold.item = i.item
+|		hold.company = current.company
+|	endif
+|
+||	return(hold.gt.active)					|#800-168310.o
+|	o.greater.active = hold.gt.active			|#800-168310.sn
+|	return(0)						|#800-168310.en
+|}								|#1672403.eo
+
+function extern long copy.variable()
+{
+	DllUsage
+	Expl.	: To set the copy variable from the session tibom1110m000.
+	Pre	: -
+	Post	: -
+	Input	: -
+	Output	: -
+	Return	: 0.
+	EndDllUsage
+
+	copy.activated = true
+	previous.mitm = tibom010.mitm
+	previous.sitm = tibom010.sitm				|#LND-4095.n
+	copied.pono   = tibom010.pono
+	copied.seqn   = tibom010.seqn
+
+
+	return(0)
+}
+
+function extern long set.group.copy.activated()
+{
+	DllUsage
+	Expl.	: To set the group copy variable from the session tibom1110m000.
+	Pre	: -
+	Post	: -
+	Input	: -
+	Output	: -
+	Return	: 0.
+	EndDllUsage
+
+	group.copy.activated = true
+
+	return(0)
+}
+
+function extern	long set.called.by.edm(boolean		i.value)
+{
+	DllUsage
+	Expl.	: This function notifies the DAL that an Insert or Update will
+		  be done from EDM.
+	Pre	: -
+	Post	: -
+	Input	: i.value		- True/False
+	Output	: -
+	Return	: 0.
+	EndDllUsage
+
+	called.by.edm = i.value
+
+	return(0)
+}
+function extern boolean drawing.present(domain tcitem i.item)
+{
+	DllUsage
+	Expl	:   - To validate if there is a drawing for the engineering
+		      item in the BOM (main or sub item)
+	Pre 	:   - tcibd001.umer has been read
+	Post	:   -
+	Input	: The engineering item
+	Output	: FALSE: no drawing
+		  TRUE : there is a drawing
+	EndDllUsage
+
+	act.revision = ""
+
+|	if i.item = tibom010.mitm then		|Mod.sn		|#202151.so
+|
+|								|Mod.so
+||		tiedm.dll0001.search.revision(
+||					i.item,
+||					utc.num(),
+||					tcibd001.umer,
+||	                                tcyesno.yes,
+||					act.revision)
+|								|Mod.eo
+|		tiedm.dll0001.search.revision.for.mitm(
+|					i.item,
+|					utc.num(),
+|					tcibd001.umer,
+|					act.revision)
+|
+|	else
+|		if	i.item = tibom010.sitm
+|		then	dummy.ret.val = tiedm.dll0001.search.revision(
+|					i.item,
+|					utc.num(),
+|					tcibd001.umer,
+|					tcyesno.no,
+|					act.revision)
+|		endif
+|	endif							|#202151.eo
+								|#202151.sn
+|	tiint.dlltiedm.search.revision(i.item,			|#1114729.o
+	tiint.dlltiedm.search.revision( true,	|* check item	|#1114729.sn
+				        i.item,			|#1114729.en
+					utc.num(),
+					tcibd001.umer,
+					act.revision)
+								|#202151.en
+
+|	|* tiedm100.cdrw is read in the above edm dll.
+|	if isspace(act.revision) or isspace(tiedm100.cdrw) or
+|	   isspace(tiedm000.ddir) then				|#Gemini-removed
+|	if isspace(act.revision) then				|#106-130922.so
+|		return(false)
+|	endif							|#106-130922.eo
+	if	tccom.dll0050.document.exists(
+					"ttiedm100",
+					tccom.dll0050.compose.entity.key(
+						i.item,
+						act.revision))
+	then	return(true)
+	endif
+
+	return(false)						|#106-130922.eo
+}								|Mod.en
+
+function extern long calculate.bom.quantity(domain tiqbm1 copy.unom,
+					    domain tiqbm1 orig.unom)
+{
+	DllUsage
+	Expl.	: To calculate the bom-quantity when copying a BOM
+	Pre	: -
+	Post	: -
+	Input	: The new unit of measure and the original unit of measure.
+	Output	: -
+	Return	: 0.
+	EndDllUsage
+
+	if	get.subitem.data(tibom010.sitm)
+	then	tibom010.noun = round(tibom010.noun * copy.unom * 1.0
+					/ orig.unom,0,1)
+		tibom010.qana = tccom.dll0007.qty.domain.round(
+					tibom010.qana * copy.unom * 1.0
+						/ orig.unom,
+					domainof(tibom010.qana),
+					bom010.sitm.cuni)
+	endif
+
+	return(0)
+}
+
+function extern long copy.bom.text()
+{
+	DllUsage
+	Expl.	: To copy the text associated with the copied BOM
+	Pre	: -
+	Post	: -
+	Input	: -
+	Output	: -
+	Return	: 0.
+	EndDllUsage
+
+	text.keyw1 = form.text$("tibom1110a")
+	|* PBOM text.
+	text.keyw2 = shiftl$(tibom010.mitm)
+	text.keyw3(1;11) = form.text$("tibom1110b")
+	|* PBOM pos.
+	text.keyw3(12;4) = edit$(tibom010.pono,"9999")
+	text.keyw4 = ""
+	dummy.ret.val = text.copy("tibom010.txta",
+					"tibom010.txta",
+					text.keyw1,
+					text.keyw2,
+					text.keyw3,
+					text.keyw4,
+					"",
+					"")
+	return(0)
+}
+
+								|#202935.sn
+function extern long phantom.customized.item.has.bom(
+						domain	tcitem	i.sub.item)
+{
+	|* Declaration of local variables.
+	domain	tcitem	bind.item		|* Bind Variable.
+	domain	tccprj	dummy.project		|* Dummy Project.
+
+	if	tipcs000.cbla = tcyesno.yes
+	  and	tibom010.cpha = tcyesno.yes
+	  and	project.present(tibom010.sitm, dummy.project)
+	  and	project.present(tibom010.mitm, dummy.project)
+	then	if	not isspace(i.sub.item)
+		then	select tibom010.mitm:bind.item
+			from   tibom010
+			where  tibom010._index1 = {:i.sub.item}
+			as set with 1 rows
+			selectdo
+				return(0)
+			endselect
+		endif
+		return(1)
+	endif
+
+	return(0)
+}
+								|#202935.en
+
+| function extern boolean get.subitem.data(domain tcitem i.item)|#lnd2-3406.o
+function extern boolean get.subitem.data(domain tcitem i.item, |#lnd2-3406.sn
+							...)   |#lnd2-3406.en
+{
+	DllUsage
+	Expl.	: This function retrieves all required item attributes and
+		  the date effective supply source. The effective dates of
+		  the bom line can be passed to determine the right effective
+		  supply source. If a bom line is currently effective then the
+		  current effective supply source is retireved. When the bom
+		  line is currently not effective then a future or passed
+		  effective supply source is retrieved(if present otherwise
+		  the default supply source is taken).
+	Pre	: -
+	Post	: -
+	Input	: -
+	Output	: -
+	Return	: True/False
+	EndDllUsage
+|			long	ret		|#229251.n	|#lnd2-3406.o
+	static  domain	tcitem	hold.item
+	static  domain	tcncmp	hold.comp
+	static	domain	tcdate	hold.eff.date			|#lnd2-3406.sn
+	static	domain	tcdate	hold.exp.date
+		domain	tcdate	i.eff.date
+		domain	tcdate	i.exp.date			|#lnd2-3406.en
+
+	if isspace(i.item) then					|#224180.sn
+		bom010.cuni.dsca = ""
+		bom010.sitm.dsca = ""
+		bom010.sitm.cuni = ""
+		hold.item = ""
+		return(true)
+	endif							|#224180.en
+								|#lnd2-3406.sn
+|* If the effective dates of the bom line are passed to this function
+|* then they are stored in i.eff.date and i.exp.date
+	i.eff.date = 0
+	i.exp.date = 0
+	on case	get.argc()
+	case 2:
+		i.eff.date = get.long.arg(2)
+		break
+	case 3:
+		i.eff.date = get.long.arg(2)
+		i.exp.date = get.long.arg(3)
+		break
+	endcase							|#lnd2-3406.en
+
+	if not isspace(i.item) and
+	   (hold.comp <> get.compnr() or
+	    hold.eff.date <> i.eff.date or			|#lnd2-3406.sn
+	    hold.exp.date <> i.exp.date or			|#lnd2-3406.en
+            hold.item <> i.item) then
+
+		select tcibd001.dsca:bom010.sitm.dsca,
+		       tcibd001.cuni:bom010.sitm.cuni,
+		       tcibd001.cpva:bom010.sitm.cpva,
+		       tcibd001.dfit:bom010.sitm.dfit,		|#FP7_T221.n
+		       tcibd001.umer:g.sitm.umer,
+		       tcibd001.ltct:g.sitm.ltct,
+		       tcibd001.efpr:g.sitm.efpr,		|#800-176593.sn
+		       tcibd001.kitm:g.sitm.kitm,		|#800-176593.en
+		       tcibd001.itmt:g.sitm.itmt,
+		       tcibd001.citg:g.sitm.citg,
+		       tcibd001.cpva:g.sitm.cpva,
+		       tcibd001.sayn:g.sitm.sayn,		|#800-152273.n
+		       tcibd001.srce:g.sitm.srce,		|#FP7_1ITM.n
+		       tcibd001.exin:g.sitm.exin,		|#800-171954.n
+		       tcibd001.cnfg:g.sitm.cnfg,		|#LND2-937.n
+		       tcmcs001.tccu:g.cuni.tccu,
+		       tcmcs001.dsca:bom010.cuni.dsca
+		from   tcibd001, tcmcs001
+		where  tcibd001._index1 = {:i.item}
+		and    tcibd001.cuni refers to tcmcs001
+		as set with 1 rows
+		selectdo
+			hold.item = i.item
+			hold.comp = get.compnr()
+			hold.eff.date = i.eff.date		|#lnd2-3406.sn
+			hold.exp.date = i.exp.date		|#lnd2-3406.en
+								|#LND2-937.sn
+			if g.sitm.efpr = tcyesno.yes then
+				if i.eff.date = 0 then		|#lnd2-3406.sn
+					i.eff.date = utc.num()
+				else
+					if i.eff.date < utc.num() then
+					   	if (i.exp.date > utc.num() or
+					    	   i.exp.date = 0) then
+					    		i.eff.date = utc.num()
+					    	else
+					    		i.eff.date = i.exp.date
+					    	endif
+					endif
+				endif				|#lnd2-3406.en
+			    	tiint.dlltcibd.set.item.source.to.actual.value(
+			    		get.compnr(),
+			    		tibom010.sitm,
+|			    		utc.num(),		|#lnd2-3406.o
+					i.eff.date,		|#lnd2-3406.n
+			    		g.sitm.srce)
+			endif
+								|#LND2-937.en
+|								|#LND2-937.so
+|			if g.sitm.efpr = tcyesno.yes then	|#800-176593.n
+|				tiipd.dll0006.retrieve.effective.item.type(
+|						tibom010.sitm,
+|						g.sitm.kitm)
+|
+|			endif					|#800-176593.n
+								|#LND2-937.eo
+			select 	tiipd001.cpha:g.sitm.cpha,
+				tiipd001.phst:g.sitm.phst,
+|				tiipd001.scpq:g.sitm.scpf,	|#205614.o
+				tiipd001.scpf:g.sitm.scpf,	|#205614.n
+				tiipd001.scpq:g.sitm.scpq,
+				tiipd001.swoc:g.sitm.swoc
+			from	tiipd001
+			where	tiipd001._index1 = {:i.item}
+			as set with 1 rows
+			selectdo
+			selectempty
+				g.sitm.cpha = tcyesno.no
+				g.sitm.phst = tcyesno.no
+				g.sitm.swoc = tcyesno.no
+				g.sitm.scpf = 0.0
+				g.sitm.scpq = 0.0
+			endselect
+
+			select 	tcibd200.cwar:g.sitm.cwar,
+				tcibd200.osys:g.sitm.osys,
+				tcibd200.opol:g.sitm.opol
+			from	tcibd200
+			where	tcibd200._index1 = {:i.item}
+			as set with 1 rows
+			selectdo
+			selectempty
+				tcibd200.cwar = ""
+				tcibd200.osys = empty
+				g.sitm.osys = empty		|#FP5_ASSY.n
+			endselect
+								|#LND-4707.so
+|								|#229251.sn
+|			dal.start.business.method(
+|						"ticpr007",
+|						"read.item.costing.data",
+|						ret, i.item)
+|			if not ret then
+|				g.sitm.ifmi = ticpr007.coyn
+|			else
+|				g.sitm.ifmi = tcyesno.no
+|			endif
+|								|#229251.en
+								|#LND-4707.eo
+
+			return(true)
+		endselect
+		return(false)
+	endif
+
+	return(true)
+}
+								|#202935.sn
+function extern long insert.phantom.levels.in.bom(
+					domain	tcitem	i.source.item,
+					domain	tcitem	i.target.item,
+					domain	tccprj	i.project,
+					domain	tiqbm2	i.quantity,
+					domain	tcscpf	i.scrap.perc,
+					domain	tcscpq	i.scrap.quant,
+					domain	tcopno	i.operation,
+					domain	tiqbm1	i.bom.unit)
+{
+	domain	tcqana		project.quantity
+	domain	tcqana		o.new.quantity
+	domain	tiutcd		reference.date
+	domain	tcuef.effn	effectivity.unit
+
+	if for.customized.bom(i.project) then
+		project.quantity = tipcs025.qana
+		reference.date	= tipcs020.cfdt
+		effectivity.unit = tipcs025.effn
+		if double.cmp(project.quantity, 0.0, 0.0001) = 0 then
+			project.quantity = i.quantity
+		endif
+	else
+		project.quantity = i.quantity
+		reference.date = utc.num()
+		effectivity.unit = 0
+	endif
+	RETIFNOK(tipcs.dll2244.calc.new.quantity.component(
+							i.source.item,
+							project.quantity,
+							i.quantity,
+							i.scrap.perc,
+							i.scrap.quant,
+							i.operation,
+							i.bom.unit,
+							reference.date,
+							effectivity.unit,
+							o.new.quantity))
+	RETIFNOK(tipcs.dll2244.copy.phantom.components.to.project(
+							 i.source.item,
+							 i.target.item,
+							 i.project,
+							 utc.num(),
+							 true,
+							 o.new.quantity,
+							 tcyesno.yes,
+							 0))
+	return(0)
+}
+								|#202935.en
+function extern long delete.object.set(domain tcitem	i.item.f,
+				       domain tcitem	i.item.t)
+{
+	DllUsage
+	Expl:  - Function to delete the customized BOM
+	Pre :  - before calling this function the values item.f and item.t must
+		 contain the right values for deleting of bom's.
+	Post:  -
+	Input:  Item range of BOM's to delete
+	Output:
+	EndDllUsage
+
+	select	tibom010.*
+	from	tibom010 for update
+	where	tibom010._index1 inrange {:i.item.f} and {:i.item.t}
+	selectdo
+		DALDESTROY(tibom010, false, db.retry)
+	endselect
+
+	return (0)
+}
+
+function extern long search.last.used.position.number(
+						domain	tcitem	i.main.item,
+					ref	domain	tcpono	o.position)
+{
+	DllUsage
+	Expl.	: Determine the next position for the BOM.
+	Pre	: -
+	Post	: -
+	Input	: i.main.item		- Main Item.
+	Output	: o.position		- Position.
+	Return	: 0.
+	EndDllUsage
+
+	|* Declaration of local variables.
+	domain	tcitem	bind.item	|* Bind Variable.
+	domain	tcsern	bind.seqn	|* Bind Variable.
+
+	o.position = 0
+	select	tibom010.mitm:bind.item,
+		tibom010.pono:o.position,
+		tibom010.seqn:bind.seqn
+	from	tibom010
+	where	tibom010._index1 = {:i.main.item}
+	order by tibom010._index1 desc
+	as set with 1 rows
+	selectdo
+	endselect
+	o.position = min(int((o.position + 10)/10.0) * 10, 9999)
+	if	o.position = 9999
+	then	dal.set.error.message("tibom1110n", strip$(tibom010.mitm))
+	|* BOM line cannot be created for item %1$s. Maximum position number is
+	|* exceeded.
+		return(DALHOOKERROR)
+	endif
+
+	return(0)
+}
+
+function extern long search.for.next.serial.number(domain tcitem i.item,
+						   domain tcpono i.pono,
+					      ref  domain tcsern o.seqn)
+{
+	DllUsage
+	Expl:  - To find the next sequence number for a position
+		 (tibom010.pono) in a BOM
+	Pre :  -
+	Post:  -
+	Input:   i.item - The main item code of a BOM.
+		 i.pono - The material position of the main item.
+	Output: The next sequence number to use.
+	EndDllUsage
+
+		long	domain.length				|verdi1.sn
+
+	domain tcitem bind.item
+	domain tcpono bind.pono
+
+	o.seqn = 0
+	select	tibom010.mitm:bind.item, tibom010.pono:bind.pono,
+		tibom010.seqn:o.seqn
+	from	tibom010
+	where	tibom010._index1 = {:i.item, :i.pono}
+	order by tibom010._index1 desc
+	as set with 1 rows
+	selectdo
+	endselect
+	o.seqn = o.seqn + 1
+	domain.length = tccom.dll0015.domain.length("tcsern")	|verdi1.so
+	if o.seqn > (pow(10, domain.length) - 1) then
+|		dal.set.error.message("tibom010.h")		|#REG-mess.so
+		|* Domain max limit exceeded; Next sequence number could not be
+		|* generated.
+		|  could not be generated 			|#REG-mess.eo
+		dal.set.error.message("tibom010.h", 		|#REG-mess.sn
+		|* Domain max limit exceeded; next sequence number could not be
+		|* generated for BOM line %1$s, %2$d.
+		trim$(i.item), i.pono)
+								|#REG-mess.en
+		return(DALHOOKERROR)
+	endif							|verdi1.en
+	return(0)
+}
+
+function extern long tibom010.cm.link(
+		domain	tcchm.cpid	i.ch.id,
+		domain	tcchm.cono	i.co.id,
+		domain	tccom.shrtid	i.obj.type,
+		domain	tccom.shrtid	i.obj.access,
+		domain	tccom.longid	i.old.obj.id,
+		domain	tccom.longid	i.new.obj.id,
+		domain	tiutcd		i.co.date,
+		domain	tcbool		i.old.to.other.ver,
+		domain	tcbool		i.new.to.other.ver,
+	ref	domain	tccom.msgcode	o.messcode,
+		domain  tccom.longid	i.extra,
+	ref	domain	tccom.longid	o.extra )
+{
+	DllUsage
+	Expl:  -  To link the BOM line to the Change management.
+	Pre :  -  BOM line should exist
+	Post:  -  A link is established between BOM and CHM.
+	Input:
+	Output: -  DALHOOKERROR = unsuccessful link
+		-  0 = Link successful
+	EndDllUsage
+
+	|* Declaration of local variables.
+	long		return.value
+	long		old.obj.sql.id
+	long		new.obj.sql.id
+	boolean		dummy.bool		|* Dummy Boolean.
+	boolean		linked.to.co		|* Linked to Change Management.
+|	boolean		proj.greater.active	|#800-168310.n	|#1672403.o
+
+	return.value   = 0
+	old.obj.sql.id = 0
+	new.obj.sql.id = 0
+
+	if	not tccom000.odmu = tcyesno.yes
+	then	dal.set.error.message("tibom010.g")
+	|* Object Data Management is not implemented in Implemented Software
+	|* Components.
+		return(DALHOOKERROR)
+	endif
+
+|						|#800-168310.sn |#1672403.so
+|	return.value = project.greater.than.active(tibom010.mitm,
+|						   proj.greater.active)
+|						|#800-168310.en |#1672403.eo
+
+	if	not isspace(i.old.obj.id)
+	then	old.obj.sql.id = tiint.dlldmchm.chm.get.object(
+					i.obj.type,
+					i.old.obj.id,
+					"")
+		dummy.bool = get.main.item.data(tibom010.mitm)
+|		if	not tcibd001.chma = tcyesno.yes		|#205121.o
+		if	not g.mitm.chma = tcyesno.yes		|#205121.n
+		then	dal.set.error.message("tibom0009",
+		|* Change Management is not selected for the item %1$s in Items
+		|* - General Data.
+					trim$(tibom010.mitm))
+			return(DALHOOKERROR)
+		endif
+
+|		if i.old.to.other.ver or i.new.to.other.ver then	|Mod.n
+		ITEM_MCOA_YES(2)
+|	   	endif							|Mod.n
+		if	i.co.date = 0
+		then	dal.set.error.message("tirou102a")
+		|* Change order / change order date is not filled.
+			return(DALHOOKERROR)
+		endif
+								|#800-168310.so
+|		if	not project.greater.than.active(tibom010.mitm)
+								|#800-168310.eo
+|		if	not proj.greater.active	|#800-168310.n	|#1672403.o
+|		then	if	tcibd001.edco = tcyesno.yes	|#205121.o
+								|#1672403.sn
+		if not tipcs.dll0020.project.status.greater.than.active(
+							tibom010.mitm)
+								|#1672403.en
+		then	if	g.mitm.edco = tcyesno.yes	|#205121.n
+			then	if	tibom010.exdt <= utc.num()
+				then	dal.set.error.message("tibom010.a",
+				|* BOM line %1$s, %2$d, %3$d is already expired;
+				|* CHM link not possible.
+						trim$(tibom010.mitm),
+						tibom010.pono,
+						tibom010.seqn)
+					return(DALHOOKERROR)
+				else	with.object.set.do(
+						sequence.linked.to.co,
+						2,
+						linked.to.co)
+					if	linked.to.co
+					then	dal.reset.error.messages(-1)
+						o.messcode = "tibom010.q"
+					endif
+					return.value = 0
+				endif
+			endif
+		else	dal.set.error.message("tirou1029")
+		|* Project status of old object is greater than Active.
+			return(DALHOOKERROR)
+		endif
+		dummy.ret.val = tiint.dlldmchm.chm.close.object(
+					old.obj.sql.id)
+	endif
+
+	if	not isspace(i.new.obj.id)
+	then	new.obj.sql.id = tiint.dlldmchm.chm.get.object(
+						i.obj.type,
+						i.new.obj.id,
+						"")
+		dummy.bool = get.main.item.data(tibom010.mitm)
+|		if	not tcibd001.chma = tcyesno.yes		|#205121.o
+		if	not g.mitm.chma = tcyesno.yes		|#205121.n
+		then	dal.set.error.message("tibom0009",
+		|* Change Management is not selected for the item %1$s in Items
+		|* - General Data.
+					trim$(tibom010.mitm))
+			return(DALHOOKERROR)
+		endif
+
+|		if i.old.to.other.ver or i.new.to.other.ver then   |Mod.n
+			ITEM_MCOA_YES(1)
+|		endif						   |Mod.n
+		if	not isspace(i.old.obj.id)
+		  and	not isspace(i.new.obj.id)
+		then	ITEM_MCOA_YES(3)
+		endif
+
+		if	i.co.date = 0
+		then	dal.set.error.message("tirou102a")
+		|* Change order / change order date is not filled.
+			return(DALHOOKERROR)
+		endif
+								|#800-168310.so
+|		if	not project.greater.than.active(tibom010.mitm)
+								|#800-168310.eo
+|		if	not proj.greater.active	|#800-168310.n	|#1672403.o
+|		then	if	tcibd001.edco = tcyesno.yes	|#205121.o
+								|#1672403.sn
+		if not tipcs.dll0020.project.status.greater.than.active(
+						tibom010.mitm)	|#1672403.en
+		then	if	g.mitm.edco = tcyesno.yes	|#205121.n
+			then	if	tibom010.indt <= utc.num()
+				then	dal.set.error.message("tibom010.b",
+				|* BOM line %1$s, %2$d, %3$d is already
+				|* effective; CHM link not possible.
+						trim$(tibom010.mitm),
+						tibom010.pono,
+						tibom010.seqn)
+					return(DALHOOKERROR)
+				else	with.object.set.do(
+			               		sequence.linked.to.co,
+						1,
+						linked.to.co)
+					if	linked.to.co
+					then	dal.reset.error.messages(-1)
+						o.messcode = "tibom010.q"
+					endif
+					return.value = 0
+				endif
+			endif
+		else	dal.set.error.message("tirou1030")
+		|* Project status of new object is greater than Active.
+			return(DALHOOKERROR)
+		endif
+		dummy.ret.val = tiint.dlldmchm.chm.close.object(
+					new.obj.sql.id)
+	endif
+	if return.value = 0 then				|#210883.sn
+		update.by.odm = true
+	else
+		update.by.odm = false
+	endif							|#210883.en
+	return (return.value)
+}
+
+function extern long tibom010.cm.unlink(
+		domain	tcchm.cpid	i.ch.id,
+		domain	tcchm.cono	i.co.id,
+		domain	tccom.shrtid	i.obj.type,
+		domain	tccom.shrtid	i.obj.access,
+		domain	tccom.longid	i.old.obj.id,
+		domain	tccom.longid 	i.new.obj.id,
+		domain	tiutcd		i.co.date,
+		domain	tcbool		i.old.to.other.ver,
+		domain	tcbool		i.new.to.other.ver,
+	ref	domain	tccom.msgcode	o.messcode,
+		domain  tccom.longid	i.extra,
+	ref	domain	tccom.longid	o.extra )
+{
+	DllUsage
+	Expl:  - To unlink the BOM line from CHM.
+	Pre :  -  A CHM link with the BOM line must be there.
+	Post:  - Unlink the BOM line with CHM.
+	Input:
+	Output:
+	EndDllUsage
+
+	|* Declaration of local variables
+	long		ret.val		|* Return Value.
+
+	ret.val = 3
+
+	if	not isspace(i.old.obj.id)
+	then	ret.val = 0
+	endif
+	if	not isspace(i.new.obj.id)
+	then	ret.val = 0
+	endif
+	if ret.val = 0 then					|#210883.sn
+		update.by.odm = false
+	else
+		update.by.odm = true
+	endif							|#210883.en
+	return(ret.val)
+}
+
+function extern long tibom010.cm.approve(
+		domain	tcchm.cpid	i.ch.id,
+		domain	tcchm.cono	i.co.id,
+		domain	tccom.shrtid	i.obj.type,
+		domain	tccom.shrtid	i.obj.access,
+		domain	tccom.longid	i.old.obj.id,
+		domain	tccom.longid	i.new.obj.id,
+		domain	tiutcs		i.co.date,
+		domain	tcbool		i.old.to.other.ver,
+		domain	tcbool		i.new.to.other.ver,
+	ref	domain	tccom.msgcode	o.messcode,
+		domain  tccom.longid	i.extra,
+	ref	domain	tccom.longid	o.extra )
+{
+	DllUsage
+	Expl:  -  Change order gets approved and the date stamping is done on
+		  the BOM line.
+	Pre :  -  There must be a CM link existing on the BOM line already
+		  for getting approved.
+	Post:  -  The dates of the CO are stamped on the BOM line.
+	Input: -
+	Output:- return value
+	EndDllUsage
+
+		long	ret_val
+		long	old.obj.sql.id
+		long	new.obj.sql.id
+		boolean	dummy.bool		|* Dummy Boolean.
+|		boolean	proj.greater.active	|#800-168310.n	|#1672403.o
+	domain	tiutcs	maximum.date				|#219379.n
+
+	ret_val = 0
+	old.obj.sql.id = 0
+	new.obj.sql.id = 0
+|	set.max(maximum.date)			|#219379.sn	|#lnd2-11185.o
+	set.max(maximum.date, domainof(maximum.date))		|#lnd2-11185.n
+	tibom.dll0008.convert.utc.to.date(maximum.date)		|#219379.en
+
+	if	not tccom000.odmu = tcyesno.yes
+	then	dal.set.error.message("tibom010.g")
+	|* Object Data Management is not implemented in Implemented Software
+	|* Components.
+		return(DALHOOKERROR)
+	endif
+|						|#800-168310.sn |#1672403.so
+|	ret_val = project.greater.than.active(tibom010.mitm,
+|					      proj.greater.active)
+|						|#800-168310.en |#1672403.eo
+	if	i.co.date = 0
+	then	return(1)
+	endif
+
+	ret_val = 1
+
+	if	not isspace(i.old.obj.id)
+	then	ret_val = 0
+		old.obj.sql.id = tiint.dlldmchm.chm.get.object(
+					i.obj.type,
+					i.old.obj.id,
+					"")
+		dummy.bool = get.main.item.data(tibom010.mitm)
+|		if	not tcibd001.chma = tcyesno.yes		|#205121.o
+		if	not g.mitm.chma = tcyesno.yes		|#205121.n
+		then	dal.set.error.message("tibom0009",
+		|* Change Management is not selected for the item %1$s in Items
+		|* - General Data.
+					trim$(tibom010.mitm))
+			return(DALHOOKERROR)
+		endif
+								|#168310.so
+|		if	not project.greater.than.active(tibom010.mitm)
+								|#168310.eo
+|		if	not proj.greater.active	|#168310.n	|#1672403.o
+								|#1672403.sn
+		if not tipcs.dll0020.project.status.greater.than.active(
+						tibom010.mitm)	|#1672403.en
+		then	dummy.ret.val = dal.change.object("tibom010")
+|			if	tcibd001.edco = tcyesno.yes	|#205121.o
+			if	g.mitm.edco = tcyesno.yes	|#205121.n
+			then	if	i.co.date < tibom010.indt
+								|#219379.sn
+				and	tibom010.indt < maximum.date
+								|#219379.en
+				then				|#251215.sn
+					i.co.date = tibom010.indt
+								|#251215.en
+|								|#251215.so
+|				then	dal.set.error.message("tibom010.d",
+|				|* Approval for BOM line %1$s, %2$d, %3$d failed
+|				|* as expiry date is less than effective date.
+|						shiftl$(strip$(tibom010.mitm)),
+|						tibom010.pono,
+|						tibom010.seqn)
+|					return(DALHOOKERROR)	|#251215.eo
+				endif
+				if	tibom010.exdt <= utc.num()
+				then	dal.set.error.message("tibom010.a",
+				|* BOM line %1$s, %2$d, %3$d is already expired;
+				|* CHM link not possible.
+						trim$(tibom010.mitm),
+						tibom010.pono,
+						tibom010.seqn)
+					return(DALHOOKERROR)
+				endif
+|				if	tcibd001.edco = tcyesno.yes |#205121.o
+								|#219379.so
+|				if	g.mitm.edco = tcyesno.yes   |#205121.n
+|				then	dal.set.field("tibom010.exdt",
+|							i.co.date)
+|				endif				|#219379.eo
+								|#219379.sn
+				if	g.mitm.edco = tcyesno.yes
+				then	if tibom010.indt > i.co.date
+					then	dal.set.field("tibom010.indt",
+							i.co.date)
+					endif
+					dal.set.field("tibom010.exdt",
+							i.co.date)
+				endif				|#219379.en
+			endif
+			if ret_val = 0 then 			|#210883.sn
+				update.by.odm = true
+			else
+				update.by.odm = false
+			endif					|#210883.en
+			dal.set.field("tibom010.exco", i.co.id)
+			RETIFNOK(dal.save.object("tibom010"))
+		else	dal.set.error.message("tirou1029")
+		|* Project status of old object is greater than Active.
+			return(DALHOOKERROR)
+		endif
+		dummy.ret.val = tiint.dlldmchm.chm.close.object(
+					old.obj.sql.id)
+	endif
+
+	if	not isspace(i.new.obj.id)
+	then	ret_val = 0
+		new.obj.sql.id = tiint.dlldmchm.chm.get.object(
+					i.obj.type,
+					i.new.obj.id,
+					"")
+		dummy.bool = get.main.item.data(tibom010.mitm)
+|		if	not tcibd001.chma = tcyesno.yes		|#205121.o
+		if	not g.mitm.chma = tcyesno.yes		|#205121.n
+		then	dal.set.error.message("tibom0009", trim$(tibom010.mitm))
+		|* Change Management is not selected for the item %1$s in Items
+		|* - General Data.
+			return(DALHOOKERROR)
+		endif
+								|#800-168310.so
+|		if	not project.greater.than.active(tibom010.mitm)
+								|#800-168310.eo
+|		if	not proj.greater.active	|#168310.n	|#1672403.o
+								|#1672403.sn
+		if not tipcs.dll0020.project.status.greater.than.active(
+						tibom010.mitm)	|#1672403.en
+		then	dummy.ret.val = dal.change.object("tibom010")
+|			if	tcibd001.edco = tcyesno.yes	|#205121.o
+			if	g.mitm.edco = tcyesno.yes	|#205121.n
+			then	if	i.co.date > tibom010.exdt
+				then	dal.set.error.message("tibom010.e",
+				|* Approval for BOM line %1$s, %2$d, %3$d failed
+				|* as effective date is greater than expiry
+				|* date.
+						trim$(tibom010.mitm),
+						tibom010.pono,
+						tibom010.seqn)
+					return(DALHOOKERROR)
+				endif
+				if	tibom010.indt <= utc.num()
+				then	dal.set.error.message("tibom010.b",
+				|* BOM line %1$s, %2$d, %3$d is already
+				|* effective; CHM link not possible.
+						trim$(tibom010.mitm),
+						tibom010.pono,
+						tibom010.seqn)
+					return(DALHOOKERROR)
+				endif
+|				if	tcibd001.edco = tcyesno.yes |#205121.o
+				if	g.mitm.edco = tcyesno.yes   |#205121.n
+				then	dal.set.field("tibom010.indt",
+							i.co.date)
+				endif
+			endif
+			if ret_val = 0 then 			|#210883.sn
+				update.by.odm = true
+			else
+				update.by.odm = false
+			endif					|#210883.en
+			dal.set.field("tibom010.efco", i.co.id)
+			RETIFNOK(dal.save.object("tibom010"))
+		else	dal.set.error.message("tirou1030")
+		|* Project status of new object is greater than Active.
+			return(DALHOOKERROR)
+		endif
+
+		dummy.ret.val = tiint.dlldmchm.chm.close.object(
+					new.obj.sql.id)
+	endif
+
+	return(ret_val)
+}
+
+|**** Internal Function Section ***********************************************
+
+function boolean read.parameters()
+{
+	tisfc.dll0000.read.tirou000()
+	tisfc.dll0000.read.tibom000()
+	tisfc.dll0000.read.tccom000()
+	tisfc.dll0000.read.tipcs000()				|#200368.n
+	if	tcibd.dll0003.read.and.check.buom(tibom000.buom, buom.conv) <> 0
+	then
+		dal.set.error.message("tibom11108")
+		|* Cannot find a conversion factor to convert default unit to
+		|* base unit.
+		return(false)
+	endif
+
+	return(true)
+}
+
+								|#LND-4707.so
+|function define.field.dependencies()
+|{
+|	dal.init.field.dependencies()
+|
+|	dal.field.depends.on(		"tibom010.cpha",
+|		HOOK_IS_VALID,		"tibom010.altp",
+|					"tibom010.sbsr",
+|					"tibom010.usup",
+|		HOOK_UPDATE,		"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.cwar",
+|		HOOK_UPDATE + HOOK_IS_MANDATORY + HOOK_IS_VALID,
+|					"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.exdt",
+|		HOOK_IS_VALID,		"tibom010.indt",
+|		HOOK_IS_DERIVED,	"tibom010.mitm")
+|
+|	dal.field.depends.on(		"tibom010.exin",
+|		HOOK_UPDATE,		"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.ifmi",
+|		HOOK_UPDATE,		"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.indt",
+|		HOOK_IS_DERIVED + HOOK_UPDATE,
+|					"tibom010.mitm")
+|
+|	dal.field.depends.on(		"tibom010.leng",
+|		HOOK_IS_APPLICABLE,	"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.lsel",
+|		HOOK_IS_VALID,		"tibom010.altp",
+|					"tibom010.cwar",
+|					"tibom010.indt",
+|					"tibom010.usup",
+|		HOOK_IS_DERIVED + HOOK_IS_VALID,
+|					"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.ltom",
+|		HOOK_IS_DERIVED,	"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.ltou",
+|		HOOK_IS_APPLICABLE,	"tibom010.ltom",
+|		HOOK_IS_DERIVED,	"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.ltov",
+|		HOOK_IS_APPLICABLE,	"tibom010.ltom",
+|		HOOK_IS_DERIVED,	"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.noun",
+|		HOOK_UPDATE,		"tibom010.leng",
+|					"tibom010.widt",
+|		HOOK_IS_APPLICABLE,	"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.opno",
+|		HOOK_IS_APPLICABLE,	"tibom010.mrou")
+|
+|	dal.field.depends.on(		"tibom010.owns",
+|		HOOK_UPDATE,		"tibom010.ifmi")
+|
+|	dal.field.depends.on(		"tibom010.phst",
+|		HOOK_IS_APPLICABLE,	"tibom010.cpha",
+|		HOOK_UPDATE,		"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.pono",
+|		HOOK_UPDATE,		"tibom010.mitm")
+|
+|	dal.field.depends.on(		"tibom010.sbsr",
+|		HOOK_IS_VALID,		"tibom010.cpha",
+|		HOOK_IS_DERIVED + HOOK_UPDATE,
+|					"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.scpf",
+|		HOOK_IS_APPLICABLE,	"tibom010.qana",
+|		HOOK_UPDATE,		"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.scpq",
+|		HOOK_IS_APPLICABLE,	"tibom010.qana",
+|		HOOK_UPDATE,		"tibom010.sitm")
+|
+|	dal.field.depends.on(		"tibom010.seqn",
+|		HOOK_UPDATE + HOOK_IS_VALID,
+|					"tibom010.mitm",
+|					"tibom010.pono")
+|
+|	dal.field.depends.on(		"tibom010.sitm",
+|		HOOK_IS_VALID,		"tibom010.altp",
+|					"tibom010.mitm",
+|					"tibom010.pono",
+|					"tibom010.seqn",
+|					"tibom010.usup")
+|
+|	dal.field.depends.on(		"tibom010.stcf",
+|		HOOK_IS_VALID,		"tibom010.unef")
+|
+|	dal.field.depends.on(		"tibom010.widt",
+|		HOOK_IS_APPLICABLE,	"tibom010.sitm")
+|
+|	dal.finalize.field.dependencies()
+|}
+								|#LND-4707.eo
+								|#LND-4707.sn
+function define.field.dependencies()
+{
+	dal.init.field.dependencies()
+
+	dal.field.depends.on(		"tibom010.cpha",
+		HOOK_IS_VALID,		"tibom010.altp",
+					"tibom010.sbsr",
+					"tibom010.usup",
+		HOOK_UPDATE,		"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.cwar",
+		HOOK_UPDATE + HOOK_IS_MANDATORY + HOOK_IS_VALID,
+					"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.exdt",
+		HOOK_IS_VALID,		"tibom010.indt",
+		HOOK_IS_DERIVED,	"tibom010.mitm")
+
+	dal.field.depends.on(		"tibom010.exin",
+		HOOK_UPDATE,		"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.icfm",
+		HOOK_IS_APPLICABLE + HOOK_IS_VALID,
+|					"tibom010.hppr",	|#800-194964.o
+					"tibom010.idpg",	|#800-194964.n
+					"tibom010.sbsr",
+					"tibom010.sitm",	|#lnd2-3406.n
+		HOOK_IS_APPLICABLE,	"tibom010.ifmi")
+
+	dal.field.depends.on(		"tibom010.ifmi",
+		HOOK_IS_APPLICABLE + HOOK_IS_VALID,
+|					"tibom010.hppr",	|#800-194964.o
+					"tibom010.idpg",	|#800-194964.n
+					"tibom010.sbsr",
+					"tibom010.sitm",	|#lnd2-3406.n
+		HOOK_IS_APPLICABLE,	"tibom010.icfm")
+
+	dal.field.depends.on(		"tibom010.indt",
+		HOOK_IS_DERIVED + HOOK_UPDATE,
+					"tibom010.mitm")
+
+	dal.field.depends.on(		"tibom010.leng",
+		HOOK_IS_APPLICABLE,	"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.lsel",
+		HOOK_IS_VALID,		"tibom010.altp",
+					"tibom010.cwar",
+					"tibom010.indt",
+					"tibom010.usup",
+		HOOK_IS_DERIVED + HOOK_IS_VALID,
+					"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.ltom",
+		HOOK_IS_DERIVED,	"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.ltou",
+		HOOK_IS_APPLICABLE,	"tibom010.ltom",
+		HOOK_IS_DERIVED,	"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.ltov",
+		HOOK_IS_APPLICABLE,	"tibom010.ltom",
+		HOOK_IS_DERIVED,	"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.noun",
+		HOOK_UPDATE,		"tibom010.leng",
+					"tibom010.widt",
+		HOOK_IS_APPLICABLE,	"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.opno",
+		HOOK_IS_APPLICABLE,	"tibom010.mitm",
+					"tibom010.mrou",
+					"tibom010.pono",
+					"tibom010.seqn")
+
+	dal.field.depends.on(		"tibom010.phst",
+		HOOK_IS_APPLICABLE,	"tibom010.cpha",
+		HOOK_UPDATE,		"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.pono",
+		HOOK_UPDATE,		"tibom010.mitm")
+
+	dal.field.depends.on(		"tibom010.sbsr",
+		HOOK_IS_VALID,		"tibom010.cpha",
+		HOOK_IS_APPLICABLE,	"tibom010.icfm",
+					"tibom010.ifmi",
+|		HOOK_IS_DERIVED + HOOK_UPDATE,			|#1602568.so
+|					"tibom010.sitm")	|#1602568.eo
+		HOOK_UPDATE,		"tibom010.cpha")	|#1602568.n
+								|#1342940.sn
+	dal.field.depends.on(		"tibom010.qana",
+		HOOK_UPDATE,		"tibom010.sitm",
+					"tibom010.leng",
+					"tibom010.widt",
+					"tibom010.noun")
+								|#1342940.en
+	dal.field.depends.on(		"tibom010.scpf",
+		HOOK_IS_APPLICABLE,	"tibom010.qana",
+		HOOK_UPDATE,		"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.scpq",
+		HOOK_IS_APPLICABLE,	"tibom010.qana",
+		HOOK_UPDATE,		"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.seqn",
+		HOOK_UPDATE + HOOK_IS_VALID,
+					"tibom010.mitm",
+					"tibom010.pono")
+
+	dal.field.depends.on(		"tibom010.sitm",
+		HOOK_IS_VALID,		"tibom010.altp",
+					"tibom010.mitm",
+					"tibom010.pono",
+					"tibom010.seqn",
+					"tibom010.usup")
+
+	dal.field.depends.on(		"tibom010.stcf",
+		HOOK_IS_VALID,		"tibom010.mitm",
+					"tibom010.pono",
+					"tibom010.seqn",
+					"tibom010.unef")
+
+	dal.field.depends.on(		"tibom010.widt",
+		HOOK_IS_APPLICABLE,	"tibom010.sitm")
+
+	dal.field.depends.on(		"tibom010.almi",	|#LND2-10312.sn
+		HOOK_IS_APPLICABLE + HOOK_UPDATE,
+					"tibom010.altp",
+					"tibom010.usup")	|#LND2-10312.en
+
+	dal.finalize.field.dependencies()
+}
+								|#LND-4707.en
+function boolean project.present(domain	tcitem	i.item,
+			ref	 domain	tccprj	o.project)
+{
+	|* Initialize output variable.
+	o.project = ""
+
+	dummy.ret.val = tcibd.dll0010.determine.segment(
+					i.item,
+					tcibd.apco.project,
+					o.project)
+	return(not isspace(o.project))
+}
+
+								|#205121.so
+|function boolean get.main.item.data(domain tcitem i.main.item)
+|{
+|	|* Declaration of local variables.
+|		domain	tcncmp	current.company	|* Current Company.
+|	static	domain	tcncmp	hold.company	|* Hold Company.
+|	static 	domain	tcitem	hold.main.item	|* Hold Main Item.
+|	static	boolean		hold.item.found	|* Hold Item Found.
+|
+|	hold.company = current.company
+|	if	hold.main.item <> i.main.item
+|	  or	hold.company <> current.company
+|	then	hold.item.found = false
+|		if	not isspace(i.main.item)
+|		then	select	tiipd001.oltm,
+|				tiipd001.unom,
+|				tiipd001.stoi,
+|				tcibd001.chma,
+|				tcibd001.edco,
+|				tcibd001.mcoa,
+|				tcibd001.csig,
+|				tcibd001.dsca,
+|				tcibd001.eitm,
+|				tcibd001.umer,
+|				tcibd001.itmt,
+|				tcibd001.cpva
+|			from	tcibd001, tiipd001
+|			where	tcibd001._index1 = {:i.main.item}
+|			and	tiipd001.item refers to tcibd001
+|			as set with 1 rows
+|			selectdo
+|				tiipd.dll0006.retrieve.effective.item.type(
+|					i.main.item,
+|					g.mitm.kitm)
+|				hold.item.found = true
+|			endselect
+|		endif
+|		hold.main.item = i.main.item
+|		hold.company = current.company
+|	endif
+|
+|	return(hold.item.found)
+|}
+								|#205121.eo
+								|#205121.sn
+|function boolean get.main.item.data(domain tcitem i.main.item)	|#FP7_T221.o
+								|#FP7_T221.sn
+function extern boolean get.main.item.data(domain tcitem i.main.item)
+								|#FP7_T221.en
+{
+	|* Declaration of local variables.
+		domain	tcncmp	current.company	|* Current Company.
+	static	domain	tcncmp	hold.company	|* Hold Company.
+	static 	domain	tcitem	hold.main.item	|* Hold Main Item.
+	static	boolean		hold.item.found	|* Hold Item Found.
+
+|	g.mitm.osys = empty			|#FP5_ASSY.n	|#FP7_1ITM.o
+	g.mitm.srce = empty					|#FP7_1ITM.n
+	hold.company = current.company
+
+	if	hold.main.item <> i.main.item
+	  or	hold.company <> current.company
+	then	hold.item.found = false
+		if	not isspace(i.main.item)
+		then	select 	tcibd001.chma:g.mitm.chma,
+|				tcibd001.cpva:g.mitm.cpva,	|#FP7_T221.o
+				tcibd001.cpva:bom010.mitm.cpva,	|#FP7_T221.n
+				tcibd001.dsca,
+				tcibd001.edco:g.mitm.edco,
+				tcibd001.eitm:g.mitm.eitm,
+				tcibd001.efpr:g.mitm.efpr,	|#800-176593.sn
+				tcibd001.kitm:g.mitm.kitm,	|#800-176593.en
+				tcibd001.itmt:g.mitm.itmt,
+				tcibd001.mcoa:g.mitm.mcoa,
+				tcibd001.umer:g.mitm.umer,
+				tcibd001.cprj:g.mitm.cprj,	|#211741.n
+				tcibd001.sayn:g.mitm.sayn,	|#800-152273.n
+				tcibd001.srce:g.mitm.srce,	|#FP7_1ITM.n
+				tcibd001.cnfg:g.mitm.cnfg,	|#LND2-937.n
+				tiipd001.stoi:g.mitm.stoi,
+				tiipd001.unom:g.mitm.unom
+			from	tcibd001, tiipd001
+			where	tcibd001._index1 = {:i.main.item}
+			and	tiipd001.item refers to tcibd001
+			as set with 1 rows
+			selectdo
+								|#LND2-937.sn
+				if g.mitm.efpr = tcyesno.yes then
+				    tiint.dlltcibd.set.item.source.to.actual.value(
+				    		get.compnr(),
+				    		i.main.item,
+				    		utc.num(),
+				    		g.mitm.srce)
+				endif
+								|#LND2-937.en
+								|#LND2-937.so
+								|#800-176593.sn
+|				if g.mitm.efpr = tcyesno.yes then
+								|#800-176593.en
+|				     tiipd.dll0006.retrieve.effective.item.type(
+|						i.main.item,
+|						g.mitm.kitm)
+|
+|				endif				|#800-176593.n
+|								|#LND2-937.eo
+				hold.item.found = true
+|						|#FP5_ASSY.sn	|#FP7_1ITM.so
+|				tcibd.dll0200.read.order.system(
+|							i.main.item,
+|							g.mitm.osys)
+|						|#FP5_ASSY.en	|#FP7_1ITM.eo
+			endselect
+		endif
+		hold.main.item = i.main.item
+		hold.company = current.company
+	endif
+
+	return(hold.item.found)
+}
+								|#205121.en
+
+function get.prev.values()
+{
+	cpha.prev = tibom010.cpha
+	cwar.prev = tibom010.cwar
+	exdt.prev = tibom010.exdt
+	indt.prev = tibom010.indt
+	ltom.prev = tibom010.ltom
+	ltou.prev = tibom010.ltou
+	ltov.prev = tibom010.ltov
+	opno.prev = tibom010.opno
+	phst.prev = tibom010.phst
+	qana.prev = tibom010.qana
+	scpf.prev = tibom010.scpf
+	scpq.prev = tibom010.scpq
+	scro.prev = tibom010.scro
+	sitm.prev = tibom010.sitm
+	stcf.prev = tibom010.stcf
+	unef.prev = tibom010.unef
+	yldo.prev = tibom010.yldo
+	preq.prev = tibom010.preq				|#1517164.n
+}
+
+function calculate.default.nett.quantity()
+{
+	|* Declaration of local variables.
+	domain	tcconv	unit.conv		|* Conversion Factor.
+	domain	tccuni	hold.base.unit		|* Hold Base Unit.
+
+	if	get.subitem.data(tibom010.sitm)
+	then	tcibd.dll0003.det.base.unit(
+					g.cuni.tccu,
+					hold.base.unit)
+		unit.conv = tcibd.dll0003.conv.factor(
+					tibom010.sitm,
+					g.sitm.citg,
+					hold.base.unit,
+					bom010.sitm.cuni,
+					false,
+					false)
+		if	double.cmp(unit.conv, 0.0, 0.0001) = 0
+		then	unit.conv = 1
+		endif
+		if	g.cuni.tccu = tctccu.length
+		   and	tibom010.noun <> 0 			|#1024157.sn
+		   and	tibom010.leng <> 0 			|#1024157.en
+		then	tibom010.qana = tibom010.noun * tibom010.leng *
+					      buom.conv / (unit.conv * 1.0)
+		endif
+		if	g.cuni.tccu = tctccu.area
+		   and	tibom010.noun <> 0 			|#1024157.sn
+		   and	tibom010.leng <> 0
+		   and	tibom010.widt <> 0 			|#1024157.en
+		then	tibom010.qana = tibom010.noun * tibom010.leng *
+					buom.conv * tibom010.widt * buom.conv /
+					(unit.conv * 1.0)
+		endif
+	endif
+}
+
+function boolean for.customized.bom(domain tccprj i.cprj)
+{
+|	select  tipcs020.*, tipcs030.*				|#202935.o
+	select	tipcs020.*, tipcs030.*, tipcs025.qana,		|#202935.sn
+		tipcs025.effn
+|	from	tipcs020, tipcs030				|#202935.o
+	from	tipcs020, tipcs030, tipcs025			|#202935.n
+	where	tipcs020._index1 = {:i.cprj}
+	and	tipcs030.cprj refers to tipcs020
+	and	tipcs030.cprj refers to tipcs025 unref clear	|#202935.n
+	as set with 1 rows
+	selectdo
+		return(true)
+	endselect
+	return(false)
+}
+
+function sequence.number.already.exists.for.position(
+					domain	tcitem	i.main.item,
+					domain	tcpono	i.position,
+					domain	tcsern	i.seq.number,
+				ref	boolean		o.already.exists)
+{
+	FunctionUsage
+	Expl.	: To check whether the sequence number for this bom position
+		  already exists.
+	Pre	: -
+	Post	: -
+	Input	: i.main.item		- Main Item.
+		  i.position		- Position.
+		  i.seq.number		- Sequence Number.
+	Output	: o.already.exists	- True when a bom record is found.
+					  False when no record is found.
+	Return	: Void.
+	EndFunctionUsage
+
+	|* Declaration of local variables.
+	domain	tcitem	bind.item	|* Bind Variable.
+
+	o.already.exists = false
+	select	tibom010.mitm:bind.item
+	from	tibom010
+	where	tibom010._index1 = {:i.main.item,
+				    :i.position,
+				    :i.seq.number}
+	as set with 1 rows
+	selectdo
+		dal.set.error.message("tiboms1000.23",
+		|* BOM Line %1$s, %2$d, %3$d  is already present.
+					trim$(tibom010.mitm),
+					tibom010.pono,
+					tibom010.seqn)
+		o.already.exists = true
+	endselect
+}
+
+|function get.warehouse.type(domain tccwar i.warehouse,		|#lnd2-521.so
+|			ref domain tctypw o.warehouse.type)
+|{
+|	|* Declaration of local variables.
+|		domain	tcncmp	current.company		|* Current Company.
+|	static	domain	tcncmp	hold.company		|* Hold Company.
+|	static	domain	tccwar	hold.warehouse		|* Hold Warehouse.
+|	static	domain	tctypw	hold.warehouse.type	|* Hold Warehouse Type.
+|
+|	current.company = get.compnr()
+|	if	hold.company <> current.company
+|	  or	hold.warehouse <> i.warehouse
+|	then	hold.warehouse.type = empty
+|		if	not isspace(i.warehouse)
+|		then	select	tcmcs003.typw:hold.warehouse.type
+|			from	tcmcs003
+|			where	tcmcs003._index1 = {:i.warehouse}
+|			as set with 1 rows
+|			selectdo
+|			endselect
+|		endif
+|		hold.warehouse = i.warehouse
+|		hold.company = current.company
+|	endif
+|
+|	o.warehouse.type = hold.warehouse.type
+|}								|#lnd2-521.eo
+
+function long copy.effectivity.statements()          |# tunnel_project.sn
+{
+	ret = tcuef.dll0003.create.compressed.key(source.key, "tibom010",
+							previous.mitm,
+							copied.pono,
+							copied.seqn)
+
+	ret = tcuef.dll0003.create.compressed.key(target.key, "tibom010",
+						  tibom010.mitm, tibom010.pono,
+						  tibom010.seqn)
+
+	if not tcuef.dll0004.copy.effectivity.validations (source.key,
+							   target.key) then
+		return(DALHOOKERROR)
+	endif
+	return(0)
+}                                                |#tunnel_project.en
+
+function void sequence.linked.to.co(
+				long		i.type,
+			ref	boolean		o.linked.to.co)
+{
+	|* Declaration of local variables.
+	long		chm.ret		|* Change Management Return Value.
+
+	|* chm.ret = 0: no, 1: new object, 2: old object, 3: old + new object
+	o.linked.to.co = false
+	select	tibom010.seqn
+	from	tibom010
+	where	tibom010._index1 = {:tibom010.mitm,
+				    :tibom010.pono,
+				    :tibom010.seqn}
+	as set with 1 rows
+	selectdo
+		chm.ret = tiintdlldmchm.object.is.linked.to.chm(
+					"",
+					"",
+					"tibom010")
+		if	(chm.ret = 1 and i.type = 1)
+		  or	(chm.ret = 2 and i.type = 2)
+		  or	chm.ret = 3
+		  or	chm.ret <> 0 and i.type = 3		|#1608903.sn
+		  	|* record used in a change order as old and/or new
+			|* and method = DAL_DESTROY		|#1608903.en
+		then	dal.set.error.message("tibom010.q")
+		|* This BOM position is already linked to an open Change Order.
+			o.linked.to.co = true
+		endif
+	endselect
+}
+
+function void another.sequence.linked.to.co(
+				ref	boolean		o.linked.to.co)
+{
+	o.linked.to.co = false
+	select	tibom010.seqn
+	from	tibom010
+	where	tibom010._index1 = {:tibom010.mitm, :tibom010.pono}
+	selectdo
+		if	tiint.dlldmchm.chm.is.object.linked(
+					"",
+					"",
+					"tibom010")
+		then	dal.set.error.message("tibom1110zz1")
+		|* Another sequence number of the same position is linked to an
+		|* open change order.
+			o.linked.to.co = true
+		endif
+	endselect
+}
+|								|#BR1101765.so
+|function get.wms.controlled.and.lot.selection.from.parameters(
+|					domain	tccwar	i.warehouse,
+|				ref	domain	tcyesno	o.wms.controlled,
+|				ref	domain	tcyesno	o.lsel.specific,
+|				ref	domain	tcyesno	o.lsel.same)
+|{
+|	|* Declaration of local variables.
+|	domain	tcyesno	dummy.yesno		|* Dummy Yesno.
+|
+|	if	not isspace(i.warehouse)
+|	then	dummy.ret.val = tiint.dllwhwmd.get.wms.parameters.manufacturing(
+|					i.warehouse,
+|					dummy.yesno,
+|					o.lsel.specific,
+|					o.lsel.same,
+|					dummy.yesno,
+|					dummy.yesno,
+|					o.wms.controlled)
+|	else	dummy.ret.val = tiint.dllwhwmd.get.wms.parameters.manufacturing(
+|					g.sitm.cwar,
+|					dummy.yesno,
+|					o.lsel.specific,
+|					o.lsel.same,
+|					dummy.yesno,
+|					dummy.yesno,
+|					o.wms.controlled)
+|	endif
+|}								|#BR1101765.eo
+								|#204537.sn
+								|#LND-4095.so
+|function long handle.phantom.routing.relations.updating(
+|			boolean		i.delete)
+|{
+|		domain	tcyesno		l.phantom
+|
+|	if not i.delete and
+|	   not ( cpha.prev = tcyesno.yes and
+|		 cpha.prev <> tibom010.cpha) then
+|		|**************************************************************
+|		|* Only actions required if the relation was a phantom relation
+|		|* and the new is not a phantom one.
+|		|**************************************************************
+|		return(0)
+|	endif
+|	select	tibom010.cpha:l.phantom
+|	from	tibom010
+|	where	tibom010._index1 = {	:tibom010.mitm}
+|	and	tibom010.sitm = :tibom010.sitm
+|	and	tibom010.cpha = tcyesno.yes
+|	and	tibom010._index1 <> {	:tibom010.mitm,
+|					:tibom010.pono,
+|					:tibom010.seqn}
+|	selectdo
+|		|**************************************************************
+|		|* Other relations with Main and Sub exist, where the phantom
+|		|* flag is set to yes. So don't delete the phantom routing
+|		|* relation
+|		|**************************************************************
+|	selectempty
+|		START.BUSINESS.METHOD(
+|			"tirou103",
+|			"delete.phantom.routing.relation.from.bom",
+|			tibom010.mitm,
+|			tibom010.sitm)
+|	endselect
+|	return(0)
+|}
+								|#LND-4095.eo
+								|#204537.en
+
+function long check.wms.sitm.warehouse()			|#BR1101765.sn
+{
+	|* If the warehouse is wms controlled, this function checks if
+	|* the item is allowed for this warehouse. Due to the settings
+	|* in WMS interface parameters (whwmd205)
+	RETIFNOK(tiint.dllwhwmd.wms.check.item(
+			(isspace(tibom010.cwar)?g.sitm.cwar:tibom010.cwar),
+			tibom010.indt,		| eff. date
+			tibom010.sitm))
+	return(0)
+}								|#BR1101765.en
+
+function long handle.publish.bill.of.resources.bom(		|#JVD.sn
+			long 		i.mode,
+			boolean		i.before)
+{
+	FunctionUsage
+	Expl:
+		The purpose of this function is to concentrate BOD actions
+		when creating, updating and destroying production orders.
+		These actions are initiated from the "after save object",
+		"before.destroy.object".
+	Pre:	Record tibom010 is current
+	Post:
+	Input:	i.mode		-> DAL_NEW and DAL_UPDATE or DAL_DESTROY
+	Output:	N.A.
+	Return:	0/DALHOOKERROR
+	EndFunctionUsage
+
+	RETIFNOK(tibod.dll4010.publish.bill.of.resources.bom.bod(
+			this.dal(),				|#1590774.n
+			i.mode,
+			i.before,
+			tibom010.mitm,				|#1590774.n
+			CALLED_FROM_DAL))			|#1590774.n
+|			tibom010.mitm))				|#1590774.o
+
+	return(0)
+}								|#JVD.en
+
+|**** End of Source ****

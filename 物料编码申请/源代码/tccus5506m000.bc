@@ -1,0 +1,157 @@
+|******************************************************************************
+|* tccus5506m000  0  VRC 105U 0  prod
+|* 浗溟浗藱浗瓿浘楓浗诹浗魦浘椌浗窔
+|* 634772
+|* 19-10-29 [15:35]
+|******************************************************************************
+|* Script Type: 123
+|******************************************************************************
+                                                                                
+|****************************** DECLARATION SECTION ***************************
+
+declaration:
+table ttccus506
+#include <bic_4gl2>
+|****************************** PROGRAM     SECTION ***************************
+field.tccus506.sqlc:
+after.field:
+| on case etol(tccus506.sqlc)
+| case 1: ||销售
+|   tccus506.tcode=""
+|   | disable.fields("tccus506.comps")  
+|   disable.fields("tccus506.tcode")  
+|   enable.fields("tccus506.xsqd")  
+|   break
+| case 2:||财务
+|   tccus506.xsqd=""
+|   | enable.fields("tccus506.comps") 
+|   enable.fields("tccus506.tcode")  
+|   disable.fields("tccus506.xsqd")  
+|   break
+| case 3:||IE
+|   tccus506.xsqd=""
+|   tccus506.tcode=""
+|   | disable.fields("tccus506.comps") 
+|   disable.fields("tccus506.tcode") 
+|   disable.fields("tccus506.xsqd") 
+|   break
+| case 4:||财务审核 以下判断为新增
+|   tccus506.xsqd=""  
+|   | disable.fields("tccus506.comps") 
+|   enable.fields("tccus506.tcode") 
+|   disable.fields("tccus506.xsqd") 
+|   break
+| case 5:||IE重置物料信号
+|   tccus506.xsqd=""
+|   tccus506.tcode=""
+|   | disable.fields("tccus506.comps") 
+|   disable.fields("tccus506.tcode") 
+|   disable.fields("tccus506.xsqd") 
+|   break
+  
+| endcase
+when.field.changes:
+on case etol(tccus506.sqlc)
+case 1: ||销售
+  tccus506.tcode=""
+  | disable.fields("tccus506.comps")  
+  enable.fields("tccus506.tcode")  
+  enable.fields("tccus506.xsqd")  
+  break
+case 2:||财务
+  tccus506.xsqd=""
+  | enable.fields("tccus506.comps") 
+  enable.fields("tccus506.tcode")  
+  disable.fields("tccus506.xsqd")  
+  break
+case 3:||IE
+  tccus506.xsqd=""
+  tccus506.tcode=""
+  | disable.fields("tccus506.comps") 
+  disable.fields("tccus506.tcode") 
+  disable.fields("tccus506.xsqd") 
+  break
+case 4:||财务审核 以下判断为新增
+  tccus506.xsqd=""  
+  | disable.fields("tccus506.comps") 
+  enable.fields("tccus506.tcode") 
+  disable.fields("tccus506.xsqd") 
+  break
+case 5:||IE重置物料信号
+  tccus506.xsqd=""
+  tccus506.tcode=""
+  | disable.fields("tccus506.comps") 
+  disable.fields("tccus506.tcode") 
+  disable.fields("tccus506.xsqd") 
+  break
+  
+endcase
+
+| field.tccus506.tcode:
+| after.field:
+| on case etol(tccus506.sqlc)
+| case 1: ||销售
+|   tccus506.tcode=""
+|   | disable.fields("tccus506.comps")  
+|   disable.fields("tccus506.tcode")  
+|   enable.fields("tccus506.xsqd")  
+|   break
+| case 2:||财务
+|   tccus506.xsqd=""
+|   | enable.fields("tccus506.comps") 
+|   enable.fields("tccus506.tcode")  
+|   disable.fields("tccus506.xsqd")  
+|   break
+| case 3:||IE
+|   tccus506.xsqd=""
+|   tccus506.tcode=""
+|   | disable.fields("tccus506.comps") 
+|   disable.fields("tccus506.tcode") 
+|   disable.fields("tccus506.xsqd") 
+|   break
+| case 4:||财务审核 以下判断为新增
+|   tccus506.xsqd=""  
+|   | disable.fields("tccus506.comps") 
+|   enable.fields("tccus506.tcode") 
+|   disable.fields("tccus506.xsqd") 
+|   break
+| case 5:||IE重置物料信号
+|   tccus506.xsqd=""
+|   tccus506.tcode=""
+|   | disable.fields("tccus506.comps") 
+|   disable.fields("tccus506.tcode") 
+|   disable.fields("tccus506.xsqd") 
+|   break
+  
+| endcase
+
+
+|****************************** ZOOM FROM   SECTION ***************************
+|****************************** FORM	     SECTION ***************************
+|****************************** CHOICE      SECTION ***************************
+|****************************** FIELD       SECTION ***************************
+|****************************** MAIN TABLE  SECTION ***************************
+|****************************** FUNCTION    SECTION ***************************
+
+functions:
+function extern boolean tccus506.tcode.is.readonly()
+{
+  if tccus506.sqlc=ltoe(3) or tccus506.sqlc=ltoe(5) then   
+    tccus506.tcode="" 
+    return(true) 
+  endif
+  
+  return(false)
+}
+
+function extern boolean tccus506.xsqd.is.readonly()
+{
+  if tccus506.sqlc=ltoe(1) then
+    return(false)
+  endif  
+  tccus506.xsqd=""
+  return(true)
+}
+
+
+

@@ -1,0 +1,88 @@
+
+|******************************************************************************
+|* tccus5401m004  0  VRC 105U 0  prod
+|* IE浗贰浗懈
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-11-05
+|******************************************************************************
+|* Main table tccus501 浗溟浗藱浗瓿浘楓, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+#pragma used dll otccusdll501
+#pragma used dll otccusdll501ws
+  table   ttccus501 | 浗溟浗藱浗瓿浘楓
+  extern domain tcorno  wlno
+
+
+|****************************** program section ********************************
+
+zoom.from.all:
+on.entry:
+    import("wlno", wlno)    
+     
+form.all:
+init.form:  
+	select * from tccus501 where tccus501.wlno=:wlno
+	selectdo
+    execute( find.data )
+	endselect
+    display.all()
+choice.update.db:
+before.choice:
+  | string errmsg(200) mb
+  | long ret
+  | ret=insert1(tccus501.wlno,tccus501.tcode,tccus501.csig,tccus501.exin,errmsg)
+  |   message(errmsg)
+  | if ret=1 then
+  |   deletetz(tccus501.wlno,tccus501.ieus)
+  |   refresh() 
+  |   refresh.parent(-1) 
+  |   Execute(end.Program)
+  | else 
+  |   refresh()
+  |   choice.again()
+  | endif
+|****************************** group section **********************************
+functions:
+function extern void IESH()
+{
+  string errmsg(200) mb
+  string title(200) mb
+
+  long ret
+  ret=insert1(tccus501.wlno,tccus501.tcode,tccus501.csig,tccus501.exin,errmsg)
+    message(errmsg)
+  if ret=1 then
+    | Execute(update.db)    
+    mb.import$(title,"您的物料申请："&tccus501.wlno&"已生成物料："&trim$(tccus501.item))
+    SendCustomtz(trim$(tccus501.item),title,tccus501.adus,"http://192.168.1.152:8312/webui/servlet/login")
+    deletetz(tccus501.wlno,tccus501.ieus)
+    |判断是否为采购物料 采购物料提醒财务人员进行成本核算 20200220
+    refresh() 
+    mb.import$(title,"请及时对物料："&trim$(tccus501.item)&"进行成本核算")
+    
+    if tccus501.kitm=ltoe(1) and len(tccus501.cwtx)>0 then
+      db.retry.point()
+      select * from tccus501 for update where tccus501.wlno=:tccus501.wlno
+      selectdo
+        tccus501.stat=ltoe(7)
+		    ret=db.update(ttccus501,db.retry)
+      endselect    
+
+      if ret<> 0 then
+		    abort.transaction() 
+		  else
+        commit.transaction()        
+      endif   
+
+      SendCustomtz(trim$(tccus501.item),title,tccus501.cwtx,"http://192.168.1.152:8312/webui/servlet/login")
+    endif    
+    refresh.parent(-1) 
+    exit()
+    |Execute(end.Program)
+  else    
+    refresh()  
+  endif
+}

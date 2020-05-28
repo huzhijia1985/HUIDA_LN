@@ -1,0 +1,37 @@
+|******************************************************************************
+|* tccus302  0  VRC 105U 0  prod
+|* 浗紗浘烇浗戗浗姆
+|* 634772
+|* 20-03-09 [14:52]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+table ttccus301
+table ttccus302
+
+function extern long before.open.object.set()
+{
+	return(0)
+}
+
+function extern long before.save.object(long type)
+{
+  | select * from tccus301 where tccus301.code=:tccus302.code
+  | selectempty
+    
+  | endselect
+	return(0)
+}
+function extern long after.destroy.object()
+{
+  select * from tccus302 where tccus302.code =:tccus302.code
+  selectempty
+    delete from tccus301 where tccus301.code =:tccus302.code
+    DELETEERROR       
+    return(-1)
+  enddelete
+  endselect 
+  return(0)
+}

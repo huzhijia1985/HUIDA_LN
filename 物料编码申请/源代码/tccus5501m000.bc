@@ -1,0 +1,63 @@
+|******************************************************************************
+|* tccus5501m000  0  VRC 105U 0  prod
+|* 浗溟浗藱浗瓿浘楓浗浘愯
+|* 634772
+|* 19-10-21 [10:30]
+|******************************************************************************
+|* Script Type: 123
+|******************************************************************************
+                                                                                
+|****************************** DECLARATION SECTION ***************************
+declaration:
+table ttccus501
+table ttccus502
+extern long ischeck
+|****************************** PROGRAM     SECTION ***************************
+|****************************** ZOOM FROM   SECTION ***************************
+|****************************** FORM	     SECTION ***************************
+|****************************** CHOICE      SECTION ***************************
+|****************************** FIELD       SECTION ***************************
+|****************************** MAIN TABLE  SECTION ***************************
+|****************************** FUNCTION    SECTION ***************************
+
+functions:
+
+
+function extern do.all.sh()
+{
+    ischeck=0	
+	do.selection(true, do.check,1)
+	if ischeck=0 then
+	  do.selection(true, do.sh)
+	  Execute(update.db)
+	else	  
+	  mess("tcibd901ysh",1)
+	endif
+	
+}
+
+function extern do.sh()
+{
+  long count502
+  long comp
+  comp=get.compnr()
+  select count(tccus502.wlno):count502 from tccus502 
+  where tccus502.wlno=:tccus501.wlno and tccus502.comp=:comp
+  selectdo
+  endselect
+  if count502>0 then
+	tccus501.shus=logname$
+	tccus501.shdt=utc.num()
+	tccus501.stat=ltoe(2)
+  else 
+    mess("tcibd904comp1",1)  
+  endif
+}
+function do.check(long stat)
+{
+	if  etol(tccus501.stat)=stat then
+		ischeck=ischeck+0
+	else 
+		ischeck=ischeck+1
+	endif 
+}

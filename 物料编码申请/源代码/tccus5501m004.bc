@@ -1,0 +1,42 @@
+|******************************************************************************
+|* tccus5101m004  0  VRC 105U 0  prod
+|* 浗溟浗藱浗浗饋浗瓿浘楓
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-10-15
+|******************************************************************************
+|* Main table tccus501 浗溟浗藱浗瓿浘楓, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+
+  table   ttccus501 | 浗溟浗藱浗瓿浘楓
+  long ischeck
+
+|****************************** program section ********************************
+before.program:
+  query.extend.where(" tccus501.stat=3 ") 
+before.display.object: 
+  disable.group(3) 
+  disable.group(4)
+  disable.group(5) 
+  disable.group(6)
+  disable.group(7)
+|****************************** group section **********************************
+
+functions:
+function extern do.sh()
+{
+	string	return_str(10)
+	export ("wlno", tccus501.wlno)    
+  return_str=start.session(MODAL,"tccus5401m004","tccus5101m004","wlno")    
+  execute(find.data)
+}
+
+function extern do.js()
+{
+	string	return_str(10)
+	export ("wlno", tccus501.wlno)    
+  return_str=start.session(MODAL,"tccus5401m005","tccus5101m004","wlno")    
+  execute(find.data)
+}

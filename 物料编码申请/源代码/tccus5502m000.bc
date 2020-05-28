@@ -1,0 +1,61 @@
+|******************************************************************************
+|* tccus5502m000  0  VRC 105U 0  prod
+|* 浗瓿浘楓浗㈧浗浗熱浗里
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-10-15
+|******************************************************************************
+|* Main table tccus502 浗溟浗藱浗瓿浘楓浗㈧浗浗熱浗里, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+
+  table   ttccus502 | 浗溟浗藱浗瓿浘楓浗㈧浗浗熱浗里
+
+
+|****************************** program section ********************************
+before.display.object:
+|disable.commands("add.set","tccus5502m000",add.set)
+
+field.tccus502.citg: |验证物料组
+  before.checks:
+  check.input:
+	select tcmcs023.* from tcmcs023 where tcmcs023._compnr=:tccus502.comp and tcmcs023.citg=:tccus502.citg
+	selectdo
+	selectempty
+	  set.input.error("tccus502uset")       		 
+	endselect
+	
+field.tccus502.uset: |验证单位集
+  before.checks:
+  check.input:
+    if trim$(tccus502.uset)<>"" then
+	  select tcmcs006.* from tcmcs006 where tcmcs006._compnr=:tccus502.comp and tcmcs006.uset=:tccus502.uset
+	  selectdo
+	  selectempty
+	  	 set.input.error("tccus502uset")      
+	  endselect
+	endif
+field.tccus502.gxcode: |验证高新条码
+  before.checks:
+  check.input:
+    if trim$(tccus502.gxcode)<>"" then
+	  select tccus008.* from tccus008 where tccus008._compnr=:tccus502.comp and tccus008.gxcode=:tccus502.gxcode
+	  selectdo
+	  selectempty
+	  	 set.input.error("tccus502gxcode")      
+	  endselect
+	endif
+field.tccus502.acun: |验证开票单位
+  before.checks:
+  check.input:
+    if trim$(tccus502.acun)<>"" then
+	  select tcmcs900.* from tcmcs900 where tcmcs900._compnr=:tccus502.comp and tcmcs900.cuni=:tccus502.acun
+	  selectdo
+	  selectempty
+	  	 set.input.error("tccus502acun")      
+	  endselect
+    endif
+
+|****************************** group section **********************************
+

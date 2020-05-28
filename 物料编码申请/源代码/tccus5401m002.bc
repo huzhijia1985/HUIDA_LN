@@ -1,0 +1,68 @@
+|******************************************************************************
+|* tccus5401m002  0  VRC 105U 0  prod
+|* IE浗乓浗贰
+|* 634772
+|* 19-11-04 [11:22]
+|******************************************************************************
+|* Script Type: 123
+|******************************************************************************
+                                                                                
+|****************************** DECLARATION SECTION ***************************
+
+declaration:
+table   ttccus501 | 浗溟浗藱浗瓿浘楓
+
+   extern  domain  tcyesno  txta.txt
+   extern  domain  tcorno           wlno
+
+|****************************** program section ********************************
+zoom.from.all:
+on.entry:
+    import("wlno", wlno)    
+
+form.all:
+init.form:   
+	select * from tccus501 where tccus501.wlno=:wlno
+	selectdo
+     make.current()	
+	endselect
+
+choice.update.db:
+before.choice:
+message("update")
+   tccus501.stat=ltoe(5)
+   tccus501.iejs=logname$
+   tccus501.jsdt=utc.num()
+
+choice.modify.set:
+before.choice:
+  message("ABCD")
+  tccus501.stat=ltoe(5)
+   tccus501.iejs=logname$
+   tccus501.jsdt=utc.num()
+
+|****************************** group section **********************************
+
+group.1:
+init.group:
+   get.screen.defaults()
+
+| choice.modify.set:
+|   after.choice:
+| 	tccus501.iejs=logname$
+| 	tccus501.jsdt=utc.num()
+| 	long stat
+|  	stat=etol(tccus501.jsstat)
+| 	on case stat
+| 	case 1:
+| 	  tccus501.stat=ltoe(5)
+| 	  break
+| 	case 2:
+| 	  tccus501.stat=ltoe(1)
+| 	  break
+| 	case 3:
+| 	  tccus501.stat=ltoe(2)
+| 	  break
+| 	ENDCASE  
+	
+

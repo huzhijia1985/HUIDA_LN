@@ -1,0 +1,38 @@
+|******************************************************************************
+|* tppdm9107m000  0  VRC 105U 0  dev 
+|* 浘椌浗矅浗艠浗绥浗處浗
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-08-24
+|******************************************************************************
+|* Main table tppdm907 浘椌浗矅浗艠浗绥浗缎浘愯, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+
+  table   ttppdm907 | 浘椌浗矅浗艠浗绥浗缎浘愯
+  table   ttffam100
+
+|****************************** program section ********************************
+
+field.tppdm907.anbr:
+before.zoom:
+   attr.zoomindex = 1
+   attr.zoomreturn$ = "tffam100._index1"
+
+after.zoom:
+  |import("tffam100.aext", aext)
+  tppdm907.anbr=tffam100.anbr
+  tppdm907.aext=tffam100.aext
+  display("tppdm907.anbr")
+  display("tppdm907.aext")
+  display("tffam100.dsca")
+after.input:
+  display("tffam100.dsca")
+
+field.tppdm907.aext:
+after.input:
+  display("tffam100.dsca")
+
+
+|****************************** group section **********************************

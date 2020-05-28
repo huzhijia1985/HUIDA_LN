@@ -1,0 +1,95 @@
+|******************************************************************************
+|* ticus2100m000  0  VRC 105U 0  prod
+|* 
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-11-11
+|******************************************************************************
+|* Main table ticus200 浘浘牋浘炴浘浘勶浗┝浗鐕, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+
+  table   tticus200 | 浘浘牋浘炴浘浘勶浗┝浗鐕
+
+
+|****************************** program section ********************************
+field.ticus200.lps:
+when.field.changes:
+  ticus200.sczs=ticus200.lps+ticus200.blps
+|   ticus200.lpv=(ticus200.lps*100)/(ticus200.sczs)
+|   string tmpl(4)
+|   string tmpz(4)
+|   store.long( ticus200.lps, tmpl )
+|   store.long( ticus200.sczs, tmpz )
+|   ticus200.lpv=(load.float(tmpl)*100)/(load.float(tmpz))
+  ticus200.lpv=(val(str$(ticus200.lps))*100)/(val(str$(ticus200.sczs)))
+  display("ticus200.sczs")
+  display("ticus200.lpv")
+field.ticus200.blps:
+when.field.changes:
+  ticus200.sczs=ticus200.lps+ticus200.blps
+|   string tmpl(4)
+|   string tmpz(4)
+|   store.long( ticus200.lps, tmpl )
+|   store.long( ticus200.sczs, tmpz )
+|   ticus200.lpv=(load.float(tmpl)*100)/(load.float(tmpz))
+  ticus200.lpv=(val(str$(ticus200.lps))*100)/(val(str$(ticus200.sczs)))
+  display("ticus200.sczs")
+  display("ticus200.lpv")
+
+field.ticus200.zzql:
+when.field.changes:
+     ticus200.blps=ticus200.zzql+ticus200.zzjz+ticus200.zzqk+ticus200.zzlg+ticus200.zzlw+ticus200.zzsx
+     +ticus200.zzbx+ticus200.zzjk+ticus200.zzbh+ticus200.zzlf
+     display("ticus200.blps")
+
+field.ticus200.zzjz:
+when.field.changes:
+     ticus200.blps=ticus200.zzql+ticus200.zzjz+ticus200.zzqk+ticus200.zzlg+ticus200.zzlw+ticus200.zzsx
+     +ticus200.zzbx+ticus200.zzjk+ticus200.zzbh+ticus200.zzlf
+     display("ticus200.blps")
+
+field.ticus200.zzqk:
+when.field.changes:
+     ticus200.blps=ticus200.zzql+ticus200.zzjz+ticus200.zzqk+ticus200.zzlg+ticus200.zzlw+ticus200.zzsx
+     +ticus200.zzbx+ticus200.zzjk+ticus200.zzbh+ticus200.zzlf
+     display("ticus200.blps")
+field.ticus200.zzlg:
+when.field.changes:
+     ticus200.blps=ticus200.zzql+ticus200.zzjz+ticus200.zzqk+ticus200.zzlg+ticus200.zzlw+ticus200.zzsx
+     +ticus200.zzbx+ticus200.zzjk+ticus200.zzbh+ticus200.zzlf
+     display("ticus200.blps")
+field.ticus200.zzlw:
+when.field.changes:
+     ticus200.blps=ticus200.zzql+ticus200.zzjz+ticus200.zzqk+ticus200.zzlg+ticus200.zzlw+ticus200.zzsx
+     +ticus200.zzbx+ticus200.zzjk+ticus200.zzbh+ticus200.zzlf
+     display("ticus200.blps")
+field.ticus200.zzsx:
+when.field.changes:
+     ticus200.blps=ticus200.zzql+ticus200.zzjz+ticus200.zzqk+ticus200.zzlg+ticus200.zzlw+ticus200.zzsx
+     +ticus200.zzbx+ticus200.zzjk+ticus200.zzbh+ticus200.zzlf
+     display("ticus200.blps")
+field.ticus200.zzbx:
+when.field.changes:
+     ticus200.blps=ticus200.zzql+ticus200.zzjz+ticus200.zzqk+ticus200.zzlg+ticus200.zzlw+ticus200.zzsx
+     +ticus200.zzbx+ticus200.zzjk+ticus200.zzbh+ticus200.zzlf
+     display("ticus200.blps")
+field.ticus200.zzjk:
+when.field.changes:
+     ticus200.blps=ticus200.zzql+ticus200.zzjz+ticus200.zzqk+ticus200.zzlg+ticus200.zzlw+ticus200.zzsx
+     +ticus200.zzbx+ticus200.zzjk+ticus200.zzbh+ticus200.zzlf
+     display("ticus200.blps")
+field.ticus200.zzbh:
+when.field.changes:
+     ticus200.blps=ticus200.zzql+ticus200.zzjz+ticus200.zzqk+ticus200.zzlg+ticus200.zzlw+ticus200.zzsx
+     +ticus200.zzbx+ticus200.zzjk+ticus200.zzbh+ticus200.zzlf
+     display("ticus200.blps")
+field.ticus200.zzlf:
+when.field.changes:
+     ticus200.blps=ticus200.zzql+ticus200.zzjz+ticus200.zzqk+ticus200.zzlg+ticus200.zzlw+ticus200.zzsx
+     +ticus200.zzbx+ticus200.zzjk+ticus200.zzbh+ticus200.zzlf
+     display("ticus200.blps")
+
+|****************************** group section **********************************
+

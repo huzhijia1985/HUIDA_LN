@@ -1,0 +1,139 @@
+|******************************************************************************
+|* tccus501  0  VRC 105U 0  prod
+|* 浗溟浗藱浗瓿浘楓
+|* 634772
+|* 19-10-16 [10:02]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+#pragma used dll otcmcsdll0050
+| #pragma used dll otccusdll501ws
+table ttccus501
+table ttccus506
+
+
+function extern long before.open.object.set()
+{
+	return(0)
+}
+
+function extern boolean  tccus501.comps.is.valid(long mode)
+{
+  long i
+  i=1
+  string c(3)
+  string cs(150)
+  boolean ret  
+  long comp
+  string comp_desc(100) mb 
+  string curr(100)
+  long first
+  comp=get.compnr()  
+  cs=trim$(str$(tccus501.comps))
+  while i<len(cs)
+    c=cs(i;3)    
+    i=i+4  
+    ret=tt.company(lval(c),comp_desc,curr,first)
+    if ret=false then
+      return(false)
+    endif
+  endwhile
+  ret = pos(cs,str$(comp))
+  if ret<=0 then
+    tccus501.comps=str$(comp)&","&tccus501.comps
+  endif 
+  return(true)
+}
+function extern long before.save.object(long type)
+{
+  long ret 
+  ret=0
+  if type=DAL_NEW then
+    ret=IsExist()
+    if ret<>0 then
+      dal.set.error.message("tccus501repeat")
+      return(-1)
+    endif
+
+    long field.length
+    string ref.mess(100)
+    string shno(9)
+    field.length = 9
+	  shno="WL1"
+	  tcmcs.dll0050.check.and.generate.order.number(3,shno,"WL1",field.length,ref.mess)
+	  tccus501.wlno=shno
+    tccus501.adus=logname$
+    tccus501.addt=utc.num()  
+  else 
+    long i
+    i=1    
+    | string comps(150) 
+    string comp(3) 
+    
+    ret=0
+    
+  endif
+
+	return(0)
+}
+
+function extern long after.destroy.object()
+{
+  delete from tccus502 where tccus502.wlno =:tccus501.wlno
+    DELETEERROR       
+    return(-1)
+  enddelete    
+  return(0)
+
+}
+
+function extern long after.save.object(long type)
+{
+  long ret
+  long i
+  i=1
+  string comps(150) 
+  string comp(3) 
+  if type=DAL_Update then
+  if etol(tccus501.stat)<=2  or etol(tccus501.stat)=6 then
+    delete from tccus502 where tccus502.wlno=:tccus501.wlno
+    DELETEERROR    
+      | abort.transaction()
+      return(-1) 
+    enddelete
+    comps=trim$(str$(tccus501.comps))
+    while i<len(comps)
+      comp=comps(i;3)
+      ret=dal.new.object("tccus502")
+      dal.set.field("tccus502.wlno",tccus501.wlno)
+      dal.set.field("tccus502.comp",comp)
+      dal.set.field("tccus502.kitm",tccus501.kitm)
+      ret=dal.save.object("tccus502")  
+      if ret<>0 then
+        | abort.transaction()
+        return(-1) 
+      endif
+      i=i+4
+    endwhile
+  endif 
+  endif
+  return(0)
+
+}
+
+function extern long IsExist()
+{
+  long ret
+  ret=0
+  select count(item):ret from tcibd001 where tcibd001.dsca=:tccus501.dsca and tcibd001.guig=:tccus501.guig and tcibd001.ycode=:tccus501.ycode and tcibd001.brand=:tccus501.brand
+  selectdo  	
+  endselect
+  if ret=0 then
+  	select count(item):ret from tccus501 where tccus501.dsca=:tccus501.dsca and tccus501.guig=:tccus501.guig and tccus501.ycode=:tccus501.ycode and tccus501.brand=:tccus501.brand	
+	selectdo
+  	endselect
+  endif
+  return(ret)
+}

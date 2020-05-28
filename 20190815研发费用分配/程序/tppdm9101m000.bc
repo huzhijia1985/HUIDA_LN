@@ -1,0 +1,77 @@
+|******************************************************************************
+|* tppdm9101m000  0  VRC 105U 0  dev 
+|* 浗饠浗а浗涡浗藱浘眴浗戗浗φ
+|* 634772
+|* 19-08-26 [15:50]
+|******************************************************************************
+|* Script Type: 123
+|******************************************************************************
+                                                                                
+|****************************** DECLARATION SECTION ***************************
+declaration:
+
+#pragma used dll otcmcsdll0050
+#pragma used dll otppdmex901
+table ttppdm901
+table ttfgld010
+table twhwmd300
+table ttfgld005
+
+
+|****************************** PROGRAM     SECTION ***************************
+|****************************** ZOOM FROM   SECTION ***************************
+|****************************** FORM	     SECTION ***************************
+|****************************** CHOICE      SECTION ***************************
+|****************************** FIELD       SECTION ***************************
+|仓库
+field.tppdm901.cwar:
+when.field.changes:
+  select whwmd300.loca from whwmd300 where whwmd300.cwar=:tppdm901.cwar and whwmd300.loca=:tppdm901.loca
+  selectdo
+  selectempty
+	tppdm901.loca=""
+  endselect 
+|库位
+field.tppdm901.loca:
+before.zoom:
+  whwmd300.cwar=tppdm901.cwar  
+field.tppdm901.dimx:
+before.zoom:
+  tfgld010.dtyp=tppdm901.typ1
+
+field.tppdm901.prno:
+before.zoom:
+  tfgld010.dtyp=tppdm901.typ3
+  
+ |调整原因 50
+field.tppdm901.adrn:
+selection.filter:
+  query.extend.where.in.zoom("tcmcs005.rstp=50")
+field.tppdm901.mnth:
+before.zoom:
+  tfgld005.year=tppdm901.year
+
+|****************************** MAIN TABLE  SECTION ***************************
+
+|****************************** FUNCTION    SECTION ***************************
+
+functions:
+function extern make.orders()
+{
+  if ask.enum("tppdm9101sd", tcyesno.yes) = tcyesno.yes then
+    do.selection(true,make.single)	
+  endif
+}
+function extern make.single()
+{
+  long ret
+  ret=0
+  domain tcmcs.s132m err.msg
+  ret=make.order(tppdm901.clno,err.msg)
+  if ret<>0 then
+    message(err.msg)
+  endif
+  
+}
+
+

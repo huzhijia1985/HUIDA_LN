@@ -1,0 +1,201 @@
+|******************************************************************************
+|* tppdm915  0  VRC 105U 0  dev 
+|* 
+|* 634772
+|* 19-09-04 [10:28]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+#pragma used dll otppdmdll900
+table ttppdm915
+table ttppdm914
+function extern long before.open.object.set()
+{
+	return(0)
+}
+
+function extern boolean  tppdm915.ydep.is.valid(long mode)
+{  
+  return(validte_prod(tppdm915.ydep,tppdm915.typ1))
+}
+
+function extern boolean  tppdm915.prno.is.valid(long mode)
+{
+  return(validte_prod(tppdm915.prno,tppdm915.typ3))
+}
+function extern boolean  tppdm915.da01.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da01",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da01))  
+}
+function extern boolean  tppdm915.da02.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da02",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da02))  
+}
+function extern boolean  tppdm915.da03.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da03",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da03))  
+}
+function extern boolean  tppdm915.da04.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da04",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da04))  
+}
+function extern boolean  tppdm915.da05.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da05",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da05))  
+}
+function extern boolean  tppdm915.da06.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da06",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da06))  
+}
+function extern boolean  tppdm915.da07.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da07",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da07))  
+}
+function extern boolean  tppdm915.da08.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da08",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da08))  
+}
+function extern boolean  tppdm915.da09.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da09",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da09))  
+}
+function extern boolean  tppdm915.da10.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da10",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da10))  
+}
+function extern boolean  tppdm915.da11.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da11",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da11))  
+}
+function extern boolean  tppdm915.da12.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da12",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da12))  
+}
+function extern boolean  tppdm915.da13.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da13",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da13))  
+}
+function extern boolean  tppdm915.da14.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da14",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da14))  
+}
+function extern boolean  tppdm915.da15.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da15",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da15))  
+}
+function extern boolean  tppdm915.da16.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da16",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da16))  
+}
+function extern boolean  tppdm915.da17.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da17",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da17))  
+}
+function extern boolean  tppdm915.da18.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da18",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da18))  
+}
+function extern boolean  tppdm915.da19.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da19",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da19))  
+}
+function extern boolean  tppdm915.da20.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da20",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da20))  
+}
+function extern boolean  tppdm915.da21.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da21",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da21))  
+}
+function extern boolean  tppdm915.da22.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da22",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da22))  
+}
+function extern boolean  tppdm915.da23.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da23",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da23))  
+}
+function extern boolean  tppdm915.da24.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da24",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da24))  
+}
+function extern boolean  tppdm915.da25.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da25",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da25))  
+}
+function extern boolean  tppdm915.da26.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da26",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da26))  
+}
+function extern boolean  tppdm915.da27.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da27",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da27))  
+}
+function extern boolean  tppdm915.da28.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da28",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da28))  
+}
+function extern boolean  tppdm915.da29.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da29",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da29))  
+}
+function extern boolean  tppdm915.da30.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da30",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da30))  
+}
+function extern boolean  tppdm915.da31.is.valid(long mode)
+{
+  return(validte_Day("tppdm915","da31",tppdm915.yfno,tppdm915.orno,tppdm915.emno,"",tppdm915.da31))  
+}
+
+
+function extern long before.save.object(long type)
+{
+	long ret
+    ret=is.ReadOnly()
+    if ret<>0 then
+      return(ret)
+    endif
+
+	if type=DAL_NEW then     
+	  tppdm915.orno=Get.Line.Number("tppdm915","yfno",tppdm915.yfno)
+	endif
+	tppdm915.gshj=tppdm915.da01+tppdm915.da02+tppdm915.da03+tppdm915.da04+tppdm915.da05
+	+tppdm915.da06+tppdm915.da07+tppdm915.da08+tppdm915.da09+tppdm915.da10+tppdm915.da11
+	+tppdm915.da12+tppdm915.da13+tppdm915.da14+tppdm915.da15+tppdm915.da16+tppdm915.da17
+	+tppdm915.da18+tppdm915.da19+tppdm915.da20+tppdm915.da21+tppdm915.da22+tppdm915.da23
+	+tppdm915.da24+tppdm915.da25+tppdm915.da26+tppdm915.da27+tppdm915.da28+tppdm915.da29
+	+tppdm915.da30+tppdm915.da31
+  if tppdm915.gshj<=0 then
+      dal.set.error.message("tppdm904zreo")
+      return(-1)
+    endif
+	tppdm915.amnt=tppdm915.gz+tppdm915.jj+tppdm915.jxj+tppdm915.ylbx+tppdm915.yibx+tppdm915.sybx
+	+tppdm915.gjj+tppdm915.shbx+tppdm915.gsbx
+	return(0)
+}
+
+function extern long before.destroy.object()
+{
+  return (is.ReadOnly())  
+}
+
+function long is.ReadOnly()
+{
+  select tppdm914.* from tppdm914 where tppdm914.yfno=:tppdm915.yfno
+    selectdo
+    if KQIsLock(tppdm914.year,tppdm914.mnth)  then
+      dal.set.error.message("tppdm907lock",tppdm914.year,tppdm914.mnth)
+      return(1)
+    endif
+  endselect
+  
+  return(0)
+}
+function extern long set.object.defaults()
+{
+    tppdm915.orno=Get.Line.Number("tppdm915","yfno",tppdm915.yfno)
+    return(0)
+}

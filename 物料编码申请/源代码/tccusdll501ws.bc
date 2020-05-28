@@ -1,0 +1,217 @@
+#include <bic_soap>
+#include <bic_curl>
+#include <bic_desktop>
+
+
+function extern long Sendtz(domain tcorno wlno,string user(100))
+{
+  long msgNode
+  long namespace
+  long bodyNode,arg0
+  long responseNode 
+  long ret
+  string  title(50) mb
+  
+  mb.import$(title,"您有需要处理的物料申请请求:")  
+  title=title&str$(wlno)
+  string users(150)
+  ret =pos(user,",")
+  if ret=0 then 
+    | users=user
+    users="{"&chr$(34)&"PersonNo"&chr$(34)&":"&chr$(34)&trim$(user)&chr$(34)&"}"
+  else
+    users=str.replace$(trim$(user),",",chr$(34)&"},{"&chr$(34)&"PersonNo"&chr$(34)&":"&chr$(34))
+    users="[{"&chr$(34)&"PersonNo"&chr$(34)&":"&chr$(34)&users&chr$(34)&"}]"
+  endif
+  msgNode = soap.newMessage( URI_SOAP11 )
+
+  |设置header 信息 OA 不需要Header信息
+|   headerNode = xmlNewNode( "soapenv:Header" )
+|   namespace = xmlNewNamespace( headerNode, "tem", "http://tempuri.org/" )
+|   xmlSetNamespace( headerNode, namespace )
+|   soap.addHeader(msgNode,headerNode)
+
+  
+  bodyNode= xmlNewNode( "sendTodo" )
+  namespace = xmlNewNamespace( bodyNode, "web", "http://webservice.notify.sys.kmss.landray.com/" )
+  xmlSetNamespace( bodyNode, namespace )
+  arg0=xmlNewNode( "arg0", XML_ELEMENT,bodyNode )
+  xmlNewDataElement("appName","Infor ERP", arg0 )
+  xmlNewDataElement("createTime",str.replace$(utc.to.iso(utc.num(),UTC_ISO_LOCAL),"T"," "), arg0 )
+  xmlNewDataElement("docCreator","", arg0 )
+  xmlNewDataElement("extendContent","", arg0 )
+  xmlNewDataElement("key",wlno, arg0 )
+  xmlNewDataElement("language","", arg0 )
+  xmlNewDataElement("level","2", arg0 )
+  xmlNewDataElement("link","http://oa.huidagroups.com:99", arg0 )
+
+  xmlNewDataElement("modelId","Infor ERP", arg0 )
+  xmlNewDataElement("modelName","Infor ERP", arg0 )
+  xmlNewDataElement("others","", arg0 )
+  xmlNewDataElement("param1","", arg0 )
+  xmlNewDataElement("param2","", arg0 )
+  xmlNewDataElement("subject",title, arg0 )
+  xmlNewDataElement("targets",users, arg0 )
+  xmlNewDataElement("type","2", arg0 ) 
+
+
+  soap.addMethod(msgNode,bodyNode)  
+
+  |发送请求
+  ret = soap.invoke( msgNode, "http://oa.huidagroups.com:99/sys/webservice/sysNotifyTodoWebService", responseNode )
+  return(ret)
+}
+
+
+function extern long SendCustomtz(string key(20),string title(200) mb,string user(100),string link(200))
+{
+  long msgNode
+  long namespace
+  long bodyNode,arg0
+  long responseNode 
+  long ret
+  |string  title(200) mb
+  
+  |mb.import$(title,"您有需要处理的物料申请请求:")  
+  |title=title&str$(wlno)
+  string users(150)
+  ret =pos(user,",")
+  if ret=0 then 
+    | users=user
+    users="{"&chr$(34)&"PersonNo"&chr$(34)&":"&chr$(34)&trim$(user)&chr$(34)&"}"
+  else
+    users=str.replace$(trim$(user),",",chr$(34)&"},{"&chr$(34)&"PersonNo"&chr$(34)&":"&chr$(34))
+    users="[{"&chr$(34)&"PersonNo"&chr$(34)&":"&chr$(34)&users&chr$(34)&"}]"
+  endif
+  msgNode = soap.newMessage( URI_SOAP11 )
+  
+  bodyNode= xmlNewNode( "sendTodo" )
+  namespace = xmlNewNamespace( bodyNode, "web", "http://webservice.notify.sys.kmss.landray.com/" )
+  xmlSetNamespace( bodyNode, namespace )
+  arg0=xmlNewNode( "arg0", XML_ELEMENT,bodyNode )
+  xmlNewDataElement("appName","Infor ERP", arg0 )
+  xmlNewDataElement("createTime",str.replace$(utc.to.iso(utc.num(),UTC_ISO_LOCAL),"T"," "), arg0 )
+  xmlNewDataElement("docCreator","", arg0 )
+  xmlNewDataElement("extendContent","", arg0 )
+  xmlNewDataElement("key",key, arg0 )
+  xmlNewDataElement("language","", arg0 )
+  xmlNewDataElement("level","2", arg0 )
+  xmlNewDataElement("link",link, arg0 )
+
+  xmlNewDataElement("modelId","Infor ERP", arg0 )
+  xmlNewDataElement("modelName","Infor ERP", arg0 )
+  xmlNewDataElement("others","", arg0 )
+  xmlNewDataElement("param1","", arg0 )
+  xmlNewDataElement("param2","", arg0 )
+  xmlNewDataElement("subject",title, arg0 )
+  xmlNewDataElement("targets",users, arg0 )
+  xmlNewDataElement("type","2", arg0 ) 
+  soap.addMethod(msgNode,bodyNode)  
+  |发送请求
+  ret = soap.invoke( msgNode, "http://oa.huidagroups.com:99/sys/webservice/sysNotifyTodoWebService", responseNode )
+  return(ret)
+}
+
+function extern long Deletetz(domain tcorno wlno,string user(100))
+{
+  long msgNode
+  long namespace
+  long bodyNode,arg0
+  long responseNode 
+  long ret
+  string  title(50) mb
+  
+  mb.import$(title,"您有需要处理的物料申请请求:")  
+  title=title&str$(wlno)
+  string users(150)
+  ret =pos(user,",")
+  if ret=0 then 
+    | users=user
+    users="{"&chr$(34)&"PersonNo"&chr$(34)&":"&chr$(34)&trim$(user)&chr$(34)&"}"
+  else
+    users=str.replace$(trim$(user),",",chr$(34)&"PersonNo"&chr$(34)&":,"&chr$(34))
+    users="{"&chr$(34)&"PersonNo"&chr$(34)&":"&chr$(34)&users&chr$(34)&"}"
+  endif
+  msgNode = soap.newMessage( URI_SOAP11 )
+
+  |设置header 信息 OA 不需要Header信息
+|   headerNode = xmlNewNode( "soapenv:Header" )
+|   namespace = xmlNewNamespace( headerNode, "tem", "http://tempuri.org/" )
+|   xmlSetNamespace( headerNode, namespace )
+|   soap.addHeader(msgNode,headerNode)
+
+  
+  bodyNode= xmlNewNode( "deleteTodo" )
+  namespace = xmlNewNamespace( bodyNode, "web", "http://webservice.notify.sys.kmss.landray.com/" )
+  xmlSetNamespace( bodyNode, namespace )
+  arg0=xmlNewNode( "arg0", XML_ELEMENT,bodyNode )
+  xmlNewDataElement("appName","Infor ERP", arg0 )
+  xmlNewDataElement("modelName","Infor ERP", arg0 )
+  xmlNewDataElement("modelId","Infor ERP", arg0 )
+  xmlNewDataElement("opttype","2", arg0 ) 
+  |xmlNewDataElement("createTime",str.replace$(utc.to.iso(utc.num(),UTC_ISO_LOCAL),"T"," "), arg0 )
+  | xmlNewDataElement("docCreator","", arg0 )
+  | xmlNewDataElement("extendContent","", arg0 )
+  xmlNewDataElement("key",wlno, arg0 )
+  | xmlNewDataElement("language","", arg0 )
+  | xmlNewDataElement("level","2", arg0 )
+  | xmlNewDataElement("link","http://oa.huidagroups.com:99", arg0 )
+
+  
+  
+  | xmlNewDataElement("others","", arg0 )
+  xmlNewDataElement("param1","", arg0 )
+  xmlNewDataElement("param2","", arg0 )
+  | xmlNewDataElement("subject",title, arg0 )
+  xmlNewDataElement("targets",users, arg0 )
+  xmlNewDataElement("type","2", arg0 ) 
+
+
+  soap.addMethod(msgNode,bodyNode)  
+
+  |发送请求
+  ret = soap.invoke( msgNode, "http://oa.huidagroups.com:99/sys/webservice/sysNotifyTodoWebService", responseNode )
+  return(ret)
+}
+
+function extern long DeleteCustomtz(string key(20),string user(100))
+{
+  long msgNode
+  long namespace
+  long bodyNode,arg0
+  long responseNode 
+  long ret
+  string  title(50) mb
+  
+  | mb.import$(title,"您有需要处理的物料申请请求:")  
+  | title=title&str$(wlno)
+  string users(150)
+  ret =pos(user,",")
+  if ret=0 then 
+    | users=user
+    users="{"&chr$(34)&"PersonNo"&chr$(34)&":"&chr$(34)&trim$(user)&chr$(34)&"}"
+  else
+    users=str.replace$(trim$(user),",",chr$(34)&"PersonNo"&chr$(34)&":,"&chr$(34))
+    users="{"&chr$(34)&"PersonNo"&chr$(34)&":"&chr$(34)&users&chr$(34)&"}"
+  endif
+  msgNode = soap.newMessage( URI_SOAP11 )
+  bodyNode= xmlNewNode( "deleteTodo" )
+  namespace = xmlNewNamespace( bodyNode, "web", "http://webservice.notify.sys.kmss.landray.com/" )
+  xmlSetNamespace( bodyNode, namespace )
+  arg0=xmlNewNode( "arg0", XML_ELEMENT,bodyNode )
+  xmlNewDataElement("appName","Infor ERP", arg0 )
+  xmlNewDataElement("modelName","Infor ERP", arg0 )
+  xmlNewDataElement("modelId","Infor ERP", arg0 )
+  xmlNewDataElement("opttype","2", arg0 )  
+  xmlNewDataElement("key",key, arg0 )
+ 
+  xmlNewDataElement("param1","", arg0 )
+  xmlNewDataElement("param2","", arg0 )
+ 
+  xmlNewDataElement("targets",users, arg0 )
+  xmlNewDataElement("type","2", arg0 ) 
+  soap.addMethod(msgNode,bodyNode)  
+  |发送请求
+  ret = soap.invoke( msgNode, "http://oa.huidagroups.com:99/sys/webservice/sysNotifyTodoWebService", responseNode )
+  return(ret)
+}

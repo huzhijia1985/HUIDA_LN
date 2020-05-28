@@ -1,0 +1,25 @@
+|******************************************************************************
+|* tccus505  0  VRC 105U 0  prod
+|* 浗浗1浗湈浗浗2浗Ⅲ浗
+|* 634772
+|* 20-03-02 [08:50]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+table ttccus505
+
+function extern long before.open.object.set()
+{
+	return(0)
+}
+function extern long before.save.object(long type)
+{
+    if type=DAL_NEW then     
+      tccus505.adus=logname$
+      tccus505.addt=utc.num()
+    endif
+	return(0)
+}
+

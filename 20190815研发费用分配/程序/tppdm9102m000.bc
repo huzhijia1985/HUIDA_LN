@@ -1,0 +1,45 @@
+|******************************************************************************
+|* tppdm9102m000  0  VRC 105U 0  dev 
+|* 浗涡浗藱浘眴浗戗浗處浗
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-08-26
+|******************************************************************************
+|* Main table tppdm902 浗饠浗а浗涡浗藱浘眴浗戗浗φ浗缎浘愯, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+
+  table   ttppdm902 | 浗饠浗а浗涡浗藱浘眴浗戗浗φ浗缎浘愯
+  table   ttcibd001
+
+
+|****************************** program section ********************************
+before.new.object:
+tppdm902.pono=get.max(tppdm902.clno)
+field.tppdm902.item:
+when.field.changes:
+  select tcibd001.cuni from tcibd001 where tcibd001.item=:tppdm902.item
+  selectdo 
+    tppdm902.cuni=tcibd001.cuni	 
+  selectempty
+    tppdm902.cuni=""
+  endselect
+after.input:
+  display("tppdm902.cuni") 
+
+|****************************** group section **********************************
+
+
+functions:
+function long get.max(domain tccprj clno)
+{
+	long max.ret
+	select max(pono):max.ret from tppdm902 where tppdm902.clno=:clno
+	selectdo 
+	max.ret=max.ret+1
+	selectempty
+	max.ret=1
+	endselect
+	return(max.ret)
+}

@@ -1,0 +1,79 @@
+|******************************************************************************
+|* tppdm9117  0  VRC 105U 0  dev 
+|* 浘椌浗矅浗艠浗绥浗诲浗琐浘棥浗鳁
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-09-24
+|******************************************************************************
+|* Main table tppdm917 浘椌浗矅浗艠浗绥浗诲浗琐浘棥浗鳁浘愯, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+#pragma used dll otppdmdll903
+  table   ttppdm917 | 浘椌浗矅浗艠浗绥浗诲浗琐浘棥浗鳁浘愯
+  table ttfgld005
+  extern  domain tfgld.year year
+  extern domain  tfgld.prod mnth
+
+
+|****************************** program section ********************************
+field.tppdm917.mnth:
+before.zoom:
+  tfgld005.year=tppdm917.year
+choice.mark.occur:      |选择后判断按钮是否可用
+	after.choice:
+    if tppdm917.lock=ltoe(2) then
+      disable.commands("unlock")
+      disable.commands("calc")
+      enable.commands("lock")
+    else
+      enable.commands("unlock")
+      enable.commands("calc")
+      disable.commands("lock")
+    endif
+
+
+|****************************** group section **********************************
+|*****************************************functions**************************
+
+functions:
+function extern Lock()
+{
+    long ret
+    ret=1
+    string err.msg(500)
+    ret=lock.data(tppdm917.year,tppdm917.mnth,etol(tppdm917.lock),err.msg)
+    |do.selection(true,dolock,ret)
+    if ret <>0 then    
+      message(err.msg)
+    else
+      execute(find.data)
+    endif 
+}
+function extern UnLock()
+{  long ret
+   ret=1
+   string err.msg(500)
+
+   err.msg=""
+   |do.selection(true,dounlock,ret)
+   ret=unlock.clean(tppdm917.year,tppdm917.mnth,err.msg)
+   if ret =0 then    
+     execute(find.data)
+   else 
+     message(err.msg)
+   endif 
+     
+}
+
+function extern Calc()
+{  
+    year=tppdm917.year
+    mnth=tppdm917.mnth
+    mnth=tppdm917.mnth 
+    string	return_str(10)
+    export ("year", year)
+    export ("mnth", mnth)
+    return_str=start.session(MODAL ,"tppdm9403m000","tppdm9117m000","")    
+    execute(find.data)
+}

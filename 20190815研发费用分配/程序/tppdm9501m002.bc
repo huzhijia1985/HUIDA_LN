@@ -1,0 +1,39 @@
+|******************************************************************************
+|* tppdm9501m002  0  VRC 105U 0  prod
+|* 浘谤浗眍浗涡浗藱浘眴浗戗浗φ
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-10-12
+|******************************************************************************
+|* Main table tppdm901 浗饠浗а浗涡浗藱浘眴浗戗浗φ浗溁浘愯, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+  #pragma used dll otppdmex901
+  table   ttppdm901 | 浗饠浗а浗涡浗藱浘眴浗戗浗φ浗溁浘愯
+
+
+|****************************** program section ********************************
+
+
+|****************************** group section **********************************
+
+
+functions:
+function extern make.orders()
+{
+  if ask.enum("tppdm9101sd", tcyesno.yes) = tcyesno.yes then
+    do.selection(true,make.single)	
+  endif
+}
+function extern make.single()
+{
+  long ret
+  ret=0
+  domain tcmcs.s132m err.msg
+  ret=make.order(tppdm901.clno,err.msg)
+  if ret<>0 then
+    message(err.msg)
+  endif
+  
+}

@@ -1,0 +1,62 @@
+|******************************************************************************
+|* tccus5401m005  0  VRC 105U 0  prod
+|* IE浗乓浗贰
+|* 634772
+|* 19-11-05 [16:50]
+|******************************************************************************
+|* Script Type: 123
+|******************************************************************************
+                                                                                
+|****************************** DECLARATION SECTION ***************************
+declaration:
+#pragma used dll otccusdll501ws
+  table   ttccus501
+  extern domain tcorno  wlno
+
+
+|****************************** program section ********************************
+zoom.from.all:
+on.entry:
+    import("wlno", wlno)    
+     
+form.all:
+init.form:
+	select * from tccus501 where tccus501.wlno=:wlno
+	selectdo
+    execute( find.data )
+	endselect
+    display.all()
+|****************************** ZOOM FROM   SECTION ***************************
+|****************************** FORM	     SECTION ***************************
+|****************************** CHOICE      SECTION ***************************
+choice.update.db:
+before.choice:
+  
+  tccus501.iejs=logname$
+  tccus501.jsdt=utc.num()  
+	long stat
+ 	stat=etol(tccus501.jsstat)
+	on case stat
+	case 1:
+	  tccus501.stat=ltoe(5)
+      deletetz(tccus501.wlno,tccus501.ieus)      
+	  break
+	case 2:
+	  tccus501.stat=ltoe(1)
+      deletetz(tccus501.wlno,tccus501.ieus)
+      sendtz(tccus501.wlno,tccus501.adus)
+	  break
+	case 3:
+	  tccus501.stat=ltoe(2)       
+      deletetz(tccus501.wlno,tccus501.ieus)
+      sendtz(tccus501.wlno,tccus501.cwus)
+	  break
+	ENDCASE 
+after.form.read:    
+    set.initial.enum.values.for.field("tccus501.jsstat",ALL_ENUMS_EXCEPT,tcjsstat.dfut)	
+|****************************** FIELD       SECTION ***************************
+
+|****************************** MAIN TABLE  SECTION ***************************
+|****************************** FUNCTION    SECTION ***************************
+
+functions:

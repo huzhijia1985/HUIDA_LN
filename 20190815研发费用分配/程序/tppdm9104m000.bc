@@ -1,0 +1,53 @@
+|******************************************************************************
+|* tppdm9104m000  0  VRC 105U 0  dev 
+|* 
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-08-22
+|******************************************************************************
+|* Main table tppdm904 浘椌浗矅浗诲浗琐浗φ浗缎浘愯, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+
+  table   ttppdm904 | 浘椌浗矅浗诲浗琐浗φ浗缎浘愯
+  table   ttfgld010
+  table   ttffam100
+  extern domain tffam.mcod aext
+
+
+|****************************** program section ********************************
+|****************************** FIELD       SECTION ***************************
+| before.new.object:
+|   tppdm904.orno=get.max(tppdm904.sgno)
+
+field.tppdm904.ydep:
+before.zoom:
+  tfgld010.dtyp=tppdm904.typ1
+
+field.tppdm904.prno:
+before.zoom:
+  tfgld010.dtyp=tppdm904.typ3
+
+field.tppdm904.anbr:
+before.zoom:
+   attr.zoomindex = 1
+   attr.zoomreturn$ = "tffam100._index1"
+
+after.zoom:
+  |import("tffam100.aext", aext)
+  tppdm904.anbr=tffam100.anbr
+  tppdm904.aext=tffam100.aext
+  display("tppdm904.anbr")
+  display("tppdm904.aext")
+  display("tffam100.dsca")
+after.input:
+  display("tffam100.dsca")
+
+field.tppdm907.aext:
+after.input:
+  display("tffam100.dsca")
+
+|****************************** group section **********************************
+
+

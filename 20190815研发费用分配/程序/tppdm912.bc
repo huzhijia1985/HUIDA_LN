@@ -1,0 +1,55 @@
+|******************************************************************************
+|* tppdm912  0  VRC 105U 0  dev 
+|* 
+|* 634772
+|* 19-09-03 [17:19]
+|******************************************************************************
+|* Script Type: DAL
+|******************************************************************************
+                                                                                
+#include <bic_dal2>
+#pragma used dll otppdmdll900
+table ttppdm912
+
+function extern long before.open.object.set()
+{
+	return(0)
+}
+
+function extern long before.save.object(long type)
+{
+	if KQIsLock(tppdm912.year,tppdm912.mnth)  then
+	    dal.set.error.message("tppdm907lock",tppdm912.year,tppdm912.mnth)
+		return(1)
+	endif
+    if type = DAL_NEW then	
+	  tppdm912.rzno=Get.OrderNo("KQ1")
+	  tppdm912.emno=logname$
+	  tppdm912.cdat=utc.num()
+    endif
+	return(0)
+}
+
+function extern long set.object.defaults()
+{
+    tppdm912.szdt= utc.num()
+    return(0)
+}
+
+function extern long before.destroy.object()
+{
+    if KQIsLock(tppdm912.year,tppdm912.mnth)  then
+	    dal.set.error.message("tppdm907lock",tppdm912.year,tppdm912.mnth)
+		return(1)
+	endif
+    
+    return(0)
+}
+function extern long after.destroy.object()
+{
+    delete from  tppdm913 where tppdm913.rzno =:tppdm912.rzno
+    DELETEERROR       
+      return(-1)
+    enddelete    
+    return(0)
+}

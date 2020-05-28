@@ -1,0 +1,70 @@
+|******************************************************************************
+|* tcibd9501m004  0  VRC 105U 0  dev 
+|* 
+|* baan
+|* 19-04-30 [08:39]
+|******************************************************************************
+|* Script Type: 123
+|******************************************************************************
+                                                                                
+|****************************** DECLARATION SECTION ***************************
+declaration:
+#include <bic_dam>
+#pragma used dll otcapiex901hdw
+
+table ttcibd901 
+table ttcibd902
+table ttcibd001 
+extern domain tcguid main.guid
+long func.ret
+string err.msg(100) mb
+|****************************** PROGRAM     SECTION ***************************
+before.program:  
+  import("main.guid", main.guid) 
+|****************************** ZOOM FROM   SECTION ***************************
+|****************************** FORM	     SECTION ***************************
+form.all:
+init.form:
+    
+	select * from tcibd901 where tcibd901.guid=:main.guid
+	selectdo
+    execute( find.data )	
+	endselect
+|****************************** CHOICE      SECTION ***************************
+choice.update.db:
+  after.choice:
+  
+  if choice=update.db then
+  func.ret=Insert1(tcibd901.guid,tcibd901.tcode,tcibd901.csig,tcibd901.exin,err.msg)
+  message(err.msg)
+  if func.ret=1 then
+    refresh() 
+    refresh.parent(-1) 
+    exit()  
+  else 
+    refresh() 
+    choice.again()  
+  endif
+  endif
+  
+  
+  
+ 
+
+|****************************** FIELD       SECTION ***************************
+|****************************** MAIN TABLE  SECTION *************************** 
+
+|****************************** FUNCTION    SECTION ***************************
+
+functions:
+function extern IESH()
+{
+  func.ret=Insert1(tcibd901.guid,tcibd901.tcode,tcibd901.csig,tcibd901.exin,err.msg)
+  message(err.msg)
+  if func.ret=1 then  
+    refresh.parent(-1) 
+    exit()    
+  endif
+
+}
+

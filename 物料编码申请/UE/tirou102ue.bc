@@ -1,0 +1,96 @@
+|******************************************************************************
+|* tirou102ue  0  VRC 105U 0  prod
+|* 浗溟浗藱浗诲浘匉浗诹浗魦浗诲浗綇
+|* 634772
+|* 20-03-04 [10:41]
+|******************************************************************************
+|* Script Type: Library
+|******************************************************************************
+                                                                                
+	table	ttirou102
+
+
+#include <bic_dal>
+#pragma used dll otccusdll501ws
+table ttccus501
+table ttibom010
+
+
+function extern long ue.before.before.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:
+		break
+	case DAL_UPDATE:
+		break
+	endcase
+	return(0)
+}
+
+function extern long ue.after.before.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:
+		break
+	case DAL_UPDATE:
+		break
+	endcase
+	return(0)
+}
+
+function extern long ue.before.after.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:
+		break
+	case DAL_UPDATE:
+		break
+	endcase
+	return(0)
+}
+
+function extern long ue.after.after.save.object(long mode)
+{
+	on case mode
+	case DAL_NEW:
+     long ret
+		select * from tccus501 for update where tccus501.item=:tirou102.mitm 
+		and tccus501.kitm=2 and tccus501.stat=4 and tccus501._compnr=150
+		selectdo
+		  select * from tibom010 where tibom010.mitm=:tirou102.mitm 
+		  selectdo
+            tccus501.stat=ltoe(7)
+		    ret=db.update(ttccus501,db.retry)
+			string title(200) mb
+    		mb.import$(title,"请及时对物料："&trim$(tccus501.item)&"进行成本核算")
+			SendCustomtz(trim$(tccus501.item),title,tccus501.cwtx,"http://192.168.1.152:8312/webui/servlet/login")
+		  endselect
+		endselect
+		
+		break
+	case DAL_UPDATE:
+		break
+	endcase
+	return(0)
+}
+
+function extern long ue.before.before.destroy.object()
+{
+	return(0)
+}
+
+function extern long ue.after.before.destroy.object()
+{
+	return(0)
+}
+
+function extern long ue.before.after.destroy.object()
+{
+	return(0)
+}
+
+function extern long ue.after.after.destroy.object()
+{
+	return(0)
+}
+

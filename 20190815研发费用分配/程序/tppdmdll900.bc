@@ -1,0 +1,341 @@
+|******************************************************************************
+|* tppdmdll900  0  VRC 105U 0  dev 
+|* 浗饠浗а浘谤浗眍浘牃浗戗浗浘価
+|* 634772
+|* 19-09-07 [16:59]
+|******************************************************************************
+|* Script Type: Library
+|******************************************************************************
+#include <bic_dal>
+#pragma used dll otcmcsdll0050
+table ttppdm917
+table ttppdm918
+table ttfgld010
+function extern string Get.OrderNo(CONST string code)
+{
+	long ret
+    long field.length
+	string ref.mess(100)
+	string shno(9)
+	 
+	shno = code
+	field.length = 9
+	ret=tcmcs.dll0050.check.and.generate.order.number(
+				3,				
+				shno,			
+				"YF1",			
+				field.length,	
+				ref.mess)    
+    return(shno)
+}
+
+
+
+function extern string Read.OrderNo(CONST string code)
+{
+	
+	long field.length
+    string ref.mess(100)
+    string shno(9)
+    field.length = 9
+	shno=code
+	tcmcs.dll0050.read.default.number(shno,"YF1",field.length,ref.mess)
+	|shno=(ret=0)?"":shno
+	return (shno)	
+}
+
+function extern boolean validte_prod(const string code, long typ)
+{
+  long ret
+  ret=0
+  select count(tfgld010.dimx):ret from tfgld010 where tfgld010.dimx=:code and tfgld010.dtyp=:typ
+  selectdo
+  endselect
+  if ret<>0 then
+    return(true)
+  endif
+  return(false)
+}
+
+function extern boolean validte_Day(CONST string tablename,CONST string field,const string OrderNo,const long orno,const string anbr,const string aext,double dacount)
+{	
+	long year
+    long mnth
+    double count
+	count=0
+    double allcount
+	allcount=0
+	double zero
+	zero=0
+	boolean flag
+	flag=false
+	string strsql(2000)
+	long sql
+	long ret
+	| boolean locked
+	
+	ON CASE tablename
+	CASE "tppdm904":	
+	  if  double.cmp (dacount ,zero,0.000001)=0 then |数量为0时不进行判断
+	    return(true)
+	  endif  
+      if double.cmp (dacount ,zero,0.000001)=-1 then
+        dal.set.error.message("tppdm904da1",field)
+        return(false)
+      endif	  
+      strsql="select tppdm903.year:1,tppdm903.mnth:2 from tppdm903 where tppdm903.sgno=:3 "
+	  sql=sql.parse(strsql)
+	  sql.select.bind(sql, 1, year)
+	  sql.select.bind(sql, 2, mnth)
+	  sql.where.bind(sql, 3, OrderNo)
+	  sql.exec(sql)
+      sql.fetch(sql)
+	  sql.break(sql)
+      sql.close(sql)
+	
+
+	  strsql="select sum(tppdm907."&field&"):5 from tppdm907 where tppdm907.szno in (select tppdm906.szno from tppdm906 where tppdm906.year=:1 and tppdm906.mnth=:2) and tppdm907.anbr=:3 and tppdm907.aext=:4"
+	  sql=sql.parse(strsql)
+	  sql.where.bind(sql, 1, year)
+	  sql.where.bind(sql, 2, mnth)
+      sql.where.bind(sql, 3, anbr)
+	  sql.where.bind(sql, 4, aext)
+	  sql.select.bind(sql, 5, allcount)
+	  sql.exec(sql)
+      sql.fetch(sql)
+	  sql.break(sql)
+      sql.close(sql)
+
+	  ret= double.cmp (allcount ,zero,0.000001)
+	  
+	  on case ret
+	  case 1:
+	  |if  double.cmp (allcount ,zero,0.00001)=1  then
+	    strsql="select sum(tppdm904."&field&"):7 from tppdm904 where  tppdm904.sgno in (select tppdm903.sgno from tppdm903 where tppdm903.year=:1 and tppdm903.mnth=:2 and tppdm903.issc=2) and (tppdm904.sgno<>:3 and tppdm904.orno<>:4) and tppdm904.anbr=:5 and tppdm904.aext=:6"
+		sql=sql.parse(strsql)
+	    sql.where.bind(sql, 1, year)
+	    sql.where.bind(sql, 2, mnth)
+        sql.where.bind(sql, 3, OrderNo)
+	    sql.where.bind(sql, 4, orno)
+		sql.where.bind(sql, 5, anbr)
+	    sql.where.bind(sql, 6, aext)
+	    sql.select.bind(sql, 7, count)
+		sql.exec(sql)
+        sql.fetch(sql)
+	    sql.break(sql)
+        sql.close(sql)
+		count=count+dacount
+        if double.cmp (allcount,count,0.000001)=-1 then
+          dal.set.error.message("tppdm904da",field,count,allcount)
+          flag=false
+        else 
+          flag=true
+        endif
+		break
+
+	  |else 
+	  case -1:
+	    dal.set.error.message("tppdm904da",field,count,allcount)
+	    flag=false
+		break
+	  case 0:
+	    flag=true
+	    break
+      endcase
+	  |endif         
+      break
+
+	CASE "tppdm907":
+	  if double.cmp (dacount ,zero,0.00001)=-1 then
+        dal.set.error.message("tppdm907da1",field)
+        return(false)
+      endif	  
+      strsql="select tppdm906.year:1,tppdm906.mnth:2 from tppdm906 where tppdm906.szno=:3 "
+	  sql=sql.parse(strsql)
+	  sql.select.bind(sql, 1, year)
+	  sql.select.bind(sql, 2, mnth)
+      sql.where.bind(sql, 3, OrderNo)
+	  sql.exec(sql)
+      sql.fetch(sql)
+	  sql.break(sql)
+      sql.close(sql)
+	
+
+	  strsql="select sum(tppdm904."&field&"):5 from tppdm904 where tppdm904.sgno in (select tppdm903.sgno from tppdm903 where tppdm903.year=:1 and tppdm903.mnth=:2 and tppdm903.issc=2) and tppdm904.anbr=:3 and tppdm904.aext=:4"
+	  sql=sql.parse(strsql)
+	  sql.where.bind(sql, 1, year)
+	  sql.where.bind(sql, 2, mnth)
+      sql.where.bind(sql, 3, anbr)
+	  sql.where.bind(sql, 4, aext)
+	  sql.select.bind(sql, 5, count)
+	  sql.exec(sql)
+      sql.fetch(sql)
+	  sql.break(sql)
+      sql.close(sql)
+	  if double.cmp (dacount,count,0.00001)=-1 then
+        dal.set.error.message("tppdm907da",field,dacount,count)
+        flag=false
+      else 
+        flag=true
+      endif
+	  break
+
+	CASE "tppdm915":	|研发考勤明细 
+	  if  double.cmp (dacount ,zero,0.000001)=0 then |数量为0时不进行判断
+	    return(true)
+	  endif  
+      if double.cmp (dacount ,zero,0.000001)=-1 then
+        dal.set.error.message("tppdm915da1",field)
+        return(false)
+      endif	  
+      strsql="select tppdm914.year:1,tppdm914.mnth:2 from tppdm914 where tppdm914.yfno=:3 "
+	  sql=sql.parse(strsql)
+	  sql.select.bind(sql, 1, year)
+	  sql.select.bind(sql, 2, mnth)
+	  sql.where.bind(sql, 3, OrderNo)
+	  sql.exec(sql)
+      sql.fetch(sql)
+	  sql.break(sql)
+      sql.close(sql)
+	
+
+	  strsql="select sum(tppdm913."&field&"):4 from tppdm913 where tppdm913.rzno in (select tppdm912.rzno from tppdm912 where tppdm912.year=:1 and tppdm912.mnth=:2) and tppdm913.emno=:3 "
+	  sql=sql.parse(strsql)
+	  sql.where.bind(sql, 1, year)
+	  sql.where.bind(sql, 2, mnth)
+      sql.where.bind(sql, 3, anbr)
+	  |sql.where.bind(sql, 4, aext)
+	  sql.select.bind(sql, 4, allcount)
+	  sql.exec(sql)
+      sql.fetch(sql)
+	  sql.break(sql)
+      sql.close(sql)
+
+	  ret= double.cmp (allcount ,zero,0.000001)
+	  
+	  on case ret
+	  case 1:
+	  |if  double.cmp (allcount ,zero,0.00001)=1  then
+	    strsql="select sum(tppdm915."&field&"):6 from tppdm915 where  tppdm915.yfno in (select tppdm914.yfno from tppdm914 where tppdm914.year=:1 and tppdm914.mnth=:2 and tppdm914.issc=2) and (tppdm915.yfno<>:3 and tppdm915.orno<>:4) and tppdm915.emno=:5 "
+		sql=sql.parse(strsql)
+	    sql.where.bind(sql, 1, year)
+	    sql.where.bind(sql, 2, mnth)
+        sql.where.bind(sql, 3, OrderNo)
+	    sql.where.bind(sql, 4, orno)
+		sql.where.bind(sql, 5, anbr)
+	    |sql.where.bind(sql, 6, aext)
+	    sql.select.bind(sql, 6, count)
+		sql.exec(sql)
+        sql.fetch(sql)
+	    sql.break(sql)
+        sql.close(sql)
+		count=count+dacount
+        if double.cmp (allcount,count,0.000001)=-1 then
+          dal.set.error.message("tppdm915da",field,count,allcount)
+          flag=false
+        else 
+          flag=true
+        endif
+		break
+
+	  |else 
+	  case -1:
+	    dal.set.error.message("tppdm915da",field,count,allcount)
+	    flag=false
+		break
+	  case 0:
+	    flag=true
+	    break
+      endcase
+	  |endif         
+      break  
+	CASE "tppdm913":
+	  if double.cmp (dacount ,zero,0.00001)=-1 then
+        dal.set.error.message("tppdm915da1",field)
+        return(false)
+      endif	  
+      strsql="select tppdm912.year:1,tppdm912.mnth:2 from tppdm912 where tppdm912.rzno=:3 "
+	  sql=sql.parse(strsql)
+	  sql.select.bind(sql, 1, year)
+	  sql.select.bind(sql, 2, mnth)
+      sql.where.bind(sql, 3, OrderNo)
+	  sql.exec(sql)
+      sql.fetch(sql)
+	  sql.break(sql)
+      sql.close(sql)
+	
+
+	  strsql="select sum(tppdm915."&field&"):4 from tppdm915 where tppdm915.yfno in (select tppdm914.yfno from tppdm914 where tppdm914.year=:1 and tppdm914.mnth=:2 and tppdm914.issc=2) and tppdm915.emno=:3 "
+	  sql=sql.parse(strsql)
+	  sql.where.bind(sql, 1, year)
+	  sql.where.bind(sql, 2, mnth)
+      sql.where.bind(sql, 3, anbr)
+	  |sql.where.bind(sql, 4, aext)
+	  sql.select.bind(sql, 4, count)
+	  sql.exec(sql)
+      sql.fetch(sql)
+	  sql.break(sql)
+      sql.close(sql)
+	  if double.cmp (dacount,count,0.00001)=-1 then
+        dal.set.error.message("tppdm915da",field,dacount,count)
+        flag=false
+      else 
+        flag=true
+      endif
+	  break
+    endcase 
+
+  return(flag)
+}
+function extern long Get.Line.Number( CONST string tbname,CONST string noname,domain tccprj sgno)
+{
+	long max.ret
+    max.ret=0
+    string strsql
+    long sql 
+    strsql="select max(orno):1 from "&tbname&" where "&tbname&". "&noname&"=:2"
+    sql=sql.parse("select max(orno):1 from "&tbname&" where "&tbname&". "&noname&"=:2")
+    sql.select.bind(sql, 1, max.ret)
+    sql.where.bind(sql, 2, sgno)
+    sql.exec(sql)
+    sql.fetch(sql)
+	sql.break(sql)
+    sql.close(sql)
+	sql=0
+    max.ret=max.ret+1
+	return(max.ret)    
+}
+
+function extern boolean IsLock(domain tfgld.year  year,domain tfgld.prod mnth)
+{	
+	boolean flag
+	flag=false
+	select tppdm917.lock from tppdm917 where tppdm917.year=:year and tppdm917.mnth=:mnth
+	selectdo
+	  if tppdm917.lock=ltoe(1) then
+	    flag=true
+	  else 
+	    flag=false
+	  endif
+	selectempty
+	  flag=false
+	endselect
+	return (flag)
+}
+
+function extern boolean KQIsLock(domain tfgld.year  year,domain tfgld.prod mnth)
+{	
+	boolean flag
+	flag=false
+	select tppdm918.lock from tppdm918 where tppdm918.year=:year and tppdm918.mnth=:mnth
+	selectdo
+	  if tppdm918.lock=ltoe(1) then
+	    flag=true
+	  else 
+	    flag=false
+	  endif
+	selectempty
+	  flag=false
+	endselect
+	return (flag)
+}

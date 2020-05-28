@@ -1,0 +1,117 @@
+|******************************************************************************
+|* tccus5101m001  0  VRC 105U 0  prod
+|* 浗溟浗藱浗浗饋浗瓿浘楓
+|* 浘佱浗倩浗范                                                                                                                                                                                                                                                                                                                                                                                                    
+|* 2019-10-15
+|******************************************************************************
+|* Main table tccus501 浗溟浗藱浗瓿浘楓, Form Type 1
+|******************************************************************************
+                                                                                
+|****************************** declaration section ***************************
+declaration:
+#pragma used dll otccusdll501ws
+  table   ttccus501 | 浗溟浗藱浗瓿浘楓
+  table ttccus506
+  long ischeck
+
+
+|****************************** program section ********************************
+before.program:
+  query.extend.where("tccus501.stat=1")
+
+
+ field.tccus501.cpcl:
+  selection.filter:
+  query.extend.where.in.zoom("tcmcs062.cpcl in ( select tccus504.cpcl from tccus504 where tccus504.csel ="
+  &quoted.string(tccus501.csel)&")")
+  
+field.tccus501.cpln:
+  selection.filter:
+  query.extend.where.in.zoom("tcmcs061.cpln in ( select tccus505.cpln from tccus505 where tccus505.cpcl ="
+  &quoted.string(tccus501.cpcl)&")")
+
+field.tccus501.cwun:
+selection.filter:
+  query.extend.where.in.zoom("((tcmcs012.cuni refers to tcmcs001 and tcmcs001.tccu = tctccu.mass))")
+
+|****************************** group section **********************************
+
+functions:
+function extern do.all.sh()
+{
+  ischeck=0
+	do.selection(true, do.check,1)
+	if ischeck=0 then
+	  do.selection(true, do.sh)
+	  Execute(update.db)
+    refresh.parent(-1)
+	else	  
+	  mess("tccus501notsh",1)
+	endif
+	
+}
+
+function extern do.sh()
+{    
+	tccus501.shus=logname$
+	tccus501.shdt=utc.num()
+	tccus501.stat=ltoe(2) 
+
+	long i
+    i=1
+	string comp(3) 
+    long ret 
+    ret=0
+	
+      select tccus506.* from tccus506 where tccus506.sqlc=2 and tccus506.tcode=:tccus501.tcode order by pono desc as set with 1 rows
+      selectdo
+        tccus501.cwus=tccus506.user 
+        | while i<len(tccus501.comps)
+        |   comp=tccus501.comps(i;3)
+        |   ret=pos(tccus506.comps,comp)
+        |   if ret>0 then 
+        |     break
+        |   endif
+        |   i=i+4
+        | endwhile 
+        | if ret>0 then        
+        |   tccus501.cwus=tccus506.user        
+        |   break
+        | endif
+      endselect
+      select tccus506.* from tccus506 where tccus506.sqlc=3 order by pono desc as set with 1 rows
+      selectdo
+        tccus501.ieus=tccus506.user        
+      endselect
+      |增加财务核算和IE重置物料信号的流程
+      select tccus506.* from tccus506 where tccus506.sqlc=4 and tccus506.tcode=:tccus501.tcode order by pono desc as set with 1 rows
+      selectdo
+        tccus501.cwtx=tccus506.user        
+      endselect
+
+      select tccus506.* from tccus506 where tccus506.sqlc=5 order by pono desc as set with 1 rows
+      selectdo
+        tccus501.iehx=tccus506.user        
+      endselect
+	if trim$(tccus501.xsqd)="" then
+      sendtz(tccus501.wlno,tccus501.cwus)
+    else
+      select tccus506.* from tccus506 where tccus506.sqlc=1 and tccus506.xsqd=:tccus501.xsqd and tccus506.tcode=:tccus501.tcode order by pono desc as set with 1 rows
+      selectdo
+        tccus501.xsus=tccus506.user    
+      selectempty
+            
+      endselect
+      sendtz(tccus501.wlno,tccus501.xsus)
+    endif 
+
+}
+function do.check(long stat)
+{
+	if  etol(tccus501.stat)=stat and len(trim$(tccus501.wlno))>0 then
+		ischeck=ischeck+0
+	else   
+		ischeck=ischeck+1
+	endif 
+
+}

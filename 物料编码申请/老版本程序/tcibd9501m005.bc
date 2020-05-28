@@ -1,0 +1,58 @@
+|******************************************************************************
+|* tcibd9501m005  0  VRC 105U 0  dev 
+|* 
+|* baan
+|* 19-05-06 [11:57]
+|******************************************************************************
+|* Script Type: 123
+|******************************************************************************
+                                                                                
+|****************************** DECLARATION SECTION ***************************
+declaration:
+table ttcibd901
+extern domain tcguid main.guid
+
+|****************************** PROGRAM     SECTION ***************************
+before.program:  
+  import("main.guid", main.guid)
+
+after.update.db.commit:
+  refresh.parent(-1)
+|****************************** ZOOM FROM   SECTION ***************************
+|****************************** FORM	     SECTION ***************************
+form.all:
+init.form:    
+	select * from tcibd901 where tcibd901.guid=:main.guid
+	selectdo	  
+	  make.current()
+	endselect
+	display("tcibd901.iejsus")  
+after.form.read:    
+    set.initial.enum.values.for.field("tcibd901.iejsstat",ALL_ENUMS_EXCEPT,tcjsstat.dfut)	
+
+|****************************** CHOICE      SECTION ***************************
+choice.modify.set:
+  after.choice:
+	tcibd901.iejsus=logname$
+	tcibd901.iejsdt=utc.num()
+	long stat
+ 	stat=etol(tcibd901.iejsstat)
+	on case stat
+	case 1:
+	  tcibd901.stat=ltoe(5)
+	  break
+	case 2:
+	  tcibd901.stat=ltoe(1)
+	  break
+	case 3:
+	  tcibd901.stat=ltoe(2)
+	  break
+	ENDCASE 
+|****************************** FIELD       SECTION ***************************
+
+|****************************** MAIN TABLE  SECTION ***************************
+
+|****************************** FUNCTION    SECTION ***************************
+
+functions:
+
