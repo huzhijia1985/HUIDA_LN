@@ -66,3 +66,84 @@ function do.check()
 		ischeck=ischeck+1
 	endif 
 }
+
+function extern do.all.jsxs()
+{
+  ischeck=0
+ 
+  string  error(20) mb 
+	if (ask.enum("tccus501iejs", tcyesno.yes)=tcyesno.no) then
+		return	  
+	endif
+	  do.selection(true, do.checkjs)
+	  if ischeck=0 then
+		do.selection(true, do.jsxs)
+		Execute(update.db)
+		refresh.parent(-1) 
+	  else
+	    mb.import$(error,"无法回退到销售")
+	  	message(error)
+	  endif
+
+	
+}
+
+function extern do.all.jssqr()
+{
+	if (ask.enum("tccus501iejs", tcyesno.yes)=tcyesno.no) then
+		return	  
+	endif
+		do.selection(true, do.jssqr)
+		Execute(update.db)
+		refresh.parent(-1) 
+	  
+}
+
+function do.checkjs()
+{
+	if ( trim$(tccus501.xsus)="") then
+		ischeck=ischeck+1
+	endif 
+}
+
+| function extern do.js()
+| {
+	
+| 	tccus501.stat=ltoe(num) 
+| 	deletetz(tccus501.wlno,tccus501.cwus)
+| 	if (num=1) then
+| 	tccus501.xsus=""
+| 	tccus501.shus=""
+| 	tccus501.ieus=""
+| 	tccus501.iehx=""
+| 	tccus501.cwtx=""	
+| 	tccus501.stat=ltoe(1)  
+| 	  return
+| 	else
+| 	  tccus501.xsus=""
+| 	  tccus501.stat=ltoe(2) 
+| 	endif
+| 	sendtz(tccus501.wlno,tccus501.xsus)
+	
+| }
+
+function extern do.jssqr()
+{
+	tccus501.xsus=""
+	tccus501.shus=""
+	tccus501.ieus=""
+	tccus501.iehx=""
+	tccus501.cwtx=""	
+	tccus501.stat=ltoe(1)
+	deletetz(tccus501.wlno,tccus501.cwus)
+	
+}
+
+function extern do.jsxs()
+{
+	tccus501.xssh=""
+	tccus501.stat=ltoe(2)
+	deletetz(tccus501.wlno,tccus501.cwus)
+	sendtz(tccus501.wlno,tccus501.xsus)
+	
+}
