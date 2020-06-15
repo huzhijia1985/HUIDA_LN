@@ -50,7 +50,12 @@ function extern void IESH()
 {
   string errmsg(200) mb
   string title(200) mb
-
+   
+   if trim$(tccus501.csig)="" then
+      mb.import$(errmsg,"必须填写物料信号才能审核")
+      message(errmsg)
+     return
+   endif 
   long ret
   ret=insert1(tccus501.wlno,tccus501.tcode,tccus501.csig,tccus501.exin,errmsg)
     message(errmsg)
