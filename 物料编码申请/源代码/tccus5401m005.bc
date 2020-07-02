@@ -47,7 +47,12 @@ before.choice:
       sendtz(tccus501.wlno,tccus501.adus)
 	  break
 	case 3:
-	  tccus501.stat=ltoe(2)       
+	  if tccus501.xsqd="" then 
+		tccus501.stat=ltoe(2)
+	  else
+	  	tccus501.stat=ltoe(6)
+	  endif
+	      
       deletetz(tccus501.wlno,tccus501.ieus)
       sendtz(tccus501.wlno,tccus501.cwus)
 	  break
