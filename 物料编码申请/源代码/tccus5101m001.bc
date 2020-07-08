@@ -19,6 +19,8 @@ declaration:
 before.program:
   query.extend.where("tccus501.stat=1")
 
+before.new.object:
+checksrce()
 
  field.tccus501.cpcl:
   selection.filter:
@@ -33,6 +35,12 @@ field.tccus501.cpln:
 field.tccus501.cwun:
 selection.filter:
   query.extend.where.in.zoom("((tcmcs012.cuni refers to tcmcs001 and tcmcs001.tccu = tctccu.mass))")
+
+field.tccus501.kitm:
+after.input:
+checksrce()
+
+
 
 |****************************** group section **********************************
 
@@ -49,6 +57,20 @@ function extern do.all.sh()
 	  mess("tccus501notsh",1)
 	endif
 	
+}
+
+function extern checksrce()
+{
+|物料类型为制造物料(2)时供应源默认为作业车间(20)，物料类型为采购物料(1)时供应源默认为采购(40)
+if choice=add.set then
+  if tccus501.kitm=ltoe(1) then
+    tccus501.srce=ltoe(40)
+    else if tccus501.kitm=ltoe(2) then
+    tccus501.srce=ltoe(20)
+    endif
+  endif
+endif
+
 }
 
 function extern do.sh()
