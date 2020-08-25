@@ -16,6 +16,13 @@ declaration:
 |****************************** program section ********************************
 before.display.object:
 |disable.commands("add.set","tccus5502m000",add.set)
+before.new.object:
+checksrce()
+
+
+field.tccus502.kitm:
+after.input:
+checksrce()
 
 field.tccus502.citg: |验证物料组
   before.checks:
@@ -57,5 +64,20 @@ field.tccus502.acun: |验证开票单位
 	  endselect
     endif
 
-|****************************** group section **********************************
 
+
+|****************************** group section **********************************
+functions:
+function extern checksrce()
+{
+|物料类型为制造物料(2)时供应源默认为作业车间(20)，物料类型为采购物料(1)时供应源默认为采购(40)
+if choice=add.set or choice=modify.set then
+  if tccus502.kitm=ltoe(1) then
+    tccus502.srce=ltoe(40)
+    else if tccus502.kitm=ltoe(2) then
+    tccus502.srce=ltoe(20)
+    endif
+  endif
+endif
+
+}

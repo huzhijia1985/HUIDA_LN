@@ -160,7 +160,7 @@ domain tcitem item
       dal.set.field("tcibd001.wxtm",tccus501.wxtm )      |网销条码
       dal.set.field("tcibd001.wxtm",tccus501.wxtm )      |高新技术代码 
       dal.set.field("tcibd001.acun",tccus502.acun )
-      dal.set.field("tcibd001.srce",tccus501.srce )
+      dal.set.field("tcibd001.srce",tccus502.srce )      |修改为获取502表的默认供应源
 |      dal.set.field("tcibd001._compnr",tcibd904.comp )       |所属公司       904
       
       ret = dal.save.object("tcibd001")
@@ -258,7 +258,7 @@ ref string errmsg() mb
 	eacun = tccus501.acun  |开票单位           20181226
 	exsqd = tccus501.xsqd  |销售渠道           20181226
 	ebzj = tccus501.bzj    |保证金             20181226
-  esrce = tccus501.srce    |默认供应源             20181226
+  esrce = tccus502.srce    |默认供应源             20181226
 	
 	ret=switch.to.company(tccus502.comp) 
 	ret = dal.new.object("tcibd001")

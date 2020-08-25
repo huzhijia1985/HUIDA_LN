@@ -110,6 +110,8 @@ function extern long after.save.object(long type)
       dal.set.field("tccus502.wlno",tccus501.wlno)
       dal.set.field("tccus502.comp",comp)
       dal.set.field("tccus502.kitm",tccus501.kitm)
+      dal.set.field("tccus502.srce",tccus501.srce)|默认供应源
+
       ret=dal.save.object("tccus502")  
       if ret<>0 then
         | abort.transaction()
